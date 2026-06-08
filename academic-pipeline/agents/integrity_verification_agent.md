@@ -270,9 +270,11 @@ or override the FAIL); an entry reaches PASS WITH NOTES only when NO FAIL condit
   - (check 2) caption_claim contradicts the data, OR is unsupported/overstated/not warranted,
     OR any atomic sub-claim of a compound caption is unsupported;
   - (check 3) a listed claim does not actually cite the artifact, the manuscript overstates
-    what the artifact supports, OR a manuscript use of the artifact is not covered by any
-    listed claim (reverse-linkage omission);
+    what the artifact supports, OR a SUBSTANTIVE manuscript use of the artifact is not
+    covered by any listed claim (reverse-linkage omission; incidental/structural mentions
+    are exempt — see check 3);
   - (check 4) a non-empty limitation is absent from caption/Discussion/Limitations.
+- PASS (clean): no FAIL condition AND no advisory condition is met.
 - PASS WITH NOTES (advisory, never silent):
   - (check 4) limitations: [] → emit [FIGURE-LIMITATIONS-EMPTY];
   - VLM unavailable/skipped with a stated reason;
