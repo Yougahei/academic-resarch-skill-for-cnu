@@ -335,7 +335,7 @@ cb_palette <- c("#0077BB", "#33BBEE", "#009988", "#EE7733",
 
 ### Handoff Format
 
-```markdown
+````markdown
 ## Figure Package: Figure [N]
 
 ### Caption
@@ -378,7 +378,7 @@ figure_table_trace:
       - {claim: "[manuscript claim text]", locator: "[§/¶ where it is made]"}   # each must actually cite this artifact, un-overstated
     limitations: ["[caveat]", ...]                      # empty [] → integrity gate surfaces [FIGURE-LIMITATIONS-EMPTY] advisory
 ```
-```
+````
 
 ---
 

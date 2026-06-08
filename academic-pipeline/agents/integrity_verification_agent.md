@@ -212,7 +212,9 @@ For each `figure_table_trace[]` entry (figures, and any manuscript table that ha
       limitations key MUST be present but its value MAY be [] (an empty array is well-formed
       and routes to the check-4 advisory; an ABSENT limitations key is malformed, so an
       omitted key cannot silently bypass the [FIGURE-LIMITATIONS-EMPTY] advisory). A
-      malformed entry cannot be verified.
+      malformed entry cannot be verified: a check-(0) MALFORMED finding SHORT-CIRCUITS
+      checks (1)-(4) for that entry (the entry FAILs on malformedness alone — do not also
+      run, or emit, a check-(4) advisory for the same entry).
 
 (1) Trace completeness
     - source_data points to a real dataset/file, and transformation is reproducible
@@ -239,11 +241,18 @@ For each `figure_table_trace[]` entry (figures, and any manuscript table that ha
     - Forward: each listed claim in supported_manuscript_claims (claim text + locator) must
       actually reference this artifact in the manuscript, and the artifact must not OVERSTATE
       what it supports (the manuscript claim must not assert more than the figure's data shows).
-    - Reverse: scan the manuscript for every place it cites this artifact (e.g. "as shown in
-      Figure N", "Table N reports …"). Each such manuscript use must be covered by a listed
-      claim and warranted by the data. A manuscript claim that leans on the artifact but is
-      NOT listed in supported_manuscript_claims is an omission (the trap is one-sided traces
-      that only declare the support the author wants seen) — surface it as a FAIL, not a pass.
+    - Reverse: scan the manuscript for every place it leans on this artifact FOR A
+      SUBSTANTIVE CLAIM (e.g. "Figure N shows accuracy exceeds the baseline", "Table N
+      demonstrates the effect holds"). Each such substantive use must be covered by a listed
+      claim and warranted by the data; a substantive manuscript claim that leans on the
+      artifact but is NOT listed in supported_manuscript_claims is an omission (the trap is
+      one-sided traces that declare only the support the author wants seen) → FAIL.
+      IGNORE incidental or structural mentions that make no data claim — "see Figure N for
+      the architecture", "results are summarized in Table N", "(Figure N)" as a pointer.
+      Those need no trace entry and must NOT be forced into one (padding the trace with
+      trivial non-claims to dodge the reverse check corrupts it). The boundary: does the
+      sentence assert something about the data that the artifact is the evidence for? If yes,
+      it must be listed; if it merely points the reader at the artifact, it is exempt.
 
 (4) Limitation visibility
     - Each non-empty limitation must be surfaced to the reader — in the caption Note, the
@@ -251,7 +260,10 @@ For each `figure_table_trace[]` entry (figures, and any manuscript table that ha
       manuscript is dropped information; this applies per-limitation, so a partial drop
       (3 listed, only 2 surfaced) fails on the dropped one.
 
-Severity — every condition maps to exactly one verdict:
+Severity — every condition maps to exactly one verdict. **Per-entry precedence:** a
+check-(0) malformed finding short-circuits the rest; otherwise, if ANY FAIL condition below
+is met the entry FAILs (advisory notes may still be recorded for context but never downgrade
+or override the FAIL); an entry reaches PASS WITH NOTES only when NO FAIL condition is met.
 - FAIL (blocking):
   - (check 0) a MALFORMED entry on a claim-bearing artifact;
   - (check 1) transformation/source_data missing or untraceable for a claim-bearing artifact;
