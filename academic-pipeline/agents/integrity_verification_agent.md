@@ -199,6 +199,50 @@ Check internal data consistency within the report:
 - Are tables consistent with body text descriptions?
 ```
 
+#### C3. Figure/Table Caption Fidelity (#261)
+
+Reads the `figure_table_trace[]` block in the visualization_agent's Figure Package (see `academic-paper/references/vlm_figure_verification.md`). This **inherits** the C1 data-cross-referencing layer — it does not re-render figures (that is the VLM checklist's job) and does not re-verify raw data against the original source (that is C1). Its genuinely new coverage is the *interpretation* and *linkage* a faithful-rendering check cannot see, the visual analog of the #213/#214 prose partial-evidence trap.
+
+For each `figure_table_trace[]` entry (figures, and any manuscript table that has an entry):
+
+```
+(1) Trace completeness
+    - source_data points to a real dataset/file, and transformation is reproducible
+      ({script, hash}) OR a precise manual-derivation pointer. A vague transformation
+      ("computed manually", "see paper") is UNTRACEABLE.
+
+(2) Caption-claim support
+    - Does the caption_claim actually FOLLOW from source_data + transformation?
+      (Not "is the plot rendered right" — that is VLM. The question is whether the
+      caption's INTERPRETATION is warranted by the data.)
+    - If the caption_claim is compound ("accuracy improves AND variance decreases"),
+      decompose it into atomic sub-claims and judge each independently before the verdict
+      — borrow the #213 decomposition AS PROSE GUIDANCE ONLY (no PARTIAL verdict, no
+      sub_claim_breakdown schema). A caption supported on one sub-claim but not another
+      is not fully supported.
+
+(3) Manuscript-claim linkage
+    - Each id in supported_manuscript_claims must actually reference this artifact in the
+      manuscript, and the artifact must not OVERSTATE what it supports (the manuscript
+      claim must not assert more than the figure's data shows).
+
+(4) Limitation visibility
+    - Each non-empty limitation must be surfaced to the reader — in the caption Note, the
+      Discussion, or the Limitations section. A known limitation that never reaches the
+      manuscript is dropped information.
+
+Severity:
+- FAIL (blocking): caption_claim contradicts source data; transformation missing/untraceable
+  for a claim-bearing artifact; a supported_manuscript_claim does not actually cite the
+  artifact, or the manuscript overstates what the artifact supports; a non-empty limitation
+  is absent from caption/Discussion/Limitations.
+- PASS WITH NOTES (advisory): limitations: [] → emit [FIGURE-LIMITATIONS-EMPTY]; VLM
+  unavailable/skipped with reason; a legacy/manual figure with no trace entry → emit a
+  trace-unavailable note.
+- A standalone manuscript table with no trace entry surfaces a trace-unavailable finding
+  (not a clean pass).
+```
+
 ### Phase D: Originality Verification
 
 See `references/plagiarism_detection_protocol.md` for the complete protocol definition. Below is an executive summary.
@@ -327,6 +371,7 @@ Flag any discrepancies with verdict.
 - **⚠️ Phase A must be a FRESH full verification of ALL references, not just re-checking Stage 2.5 fixes.** The Stage 2.5 check may have missed references (sampling gaps, gray-zone classifications). Stage 4.5 is the last line of defense — it must independently verify every reference as if Stage 2.5 never happened.
 - Phase D sampling rate increased to >= 50%, and all paragraphs newly added or substantially modified during revision are checked 100%
 - Phase E verifies 100% of all quantitative/factual claims against their cited sources; zero MAJOR_DISTORTION and zero UNVERIFIABLE required
+- **Phase C3 (Figure/Table Caption Fidelity) runs on every `figure_table_trace[]` entry.** If an updated Figure Package exists but carries no `figure_table_trace[]` block, treat the figures as NOT VERIFIED for caption fidelity — not a clean pass (otherwise the #261 check is trivially skippable). A legacy figure with no Figure Package surfaces a trace-unavailable note (advisory).
 - Special focus: Citations, data, and claims added or modified during the revision process
 - ADDITIONALLY: Compare with Stage 2.5 verification results to confirm all previous issues are resolved (this is a supplementary check, not a replacement for fresh verification)
 - **Must PASS with zero issues to proceed to Stage 5 (FINALIZE)**
