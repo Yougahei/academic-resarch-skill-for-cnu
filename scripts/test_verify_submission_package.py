@@ -599,6 +599,38 @@ def test_A5_zh_tw_self_citation_phrase(tmp_path):
     assert "我們先前的研究" in a5["detail"]
 
 
+def test_A5_zh_tw_third_person_author_self_reference(tmp_path):
+    # zh-TW curation (#394 follow-up): third-person self-reference via
+    # 本文作者 — the bare 作者先前 would false-positive on 該作者先前
+    # (a cited third party's author), so the phrase is anchored on the
+    # 本文 prefix.
+    package = tmp_path / "pkg"
+    package.mkdir()
+    (package / "paper.md").write_text("Body.\n", encoding="utf-8")
+    (package / "paper_anonymized.md").write_text(
+        "# 匿名稿\n\n本文作者先前已就品保回饋迴圈提出分析架構。\n",
+        encoding="utf-8")
+    _rc, report = run_dir(package)
+    a5 = checks_by_id(report)["A5"]
+    assert a5["status"] == "fail"
+    assert "本文作者先前" in a5["detail"]
+
+
+def test_A5_other_authors_prior_work_not_flagged(tmp_path):
+    # 該作者先前 refers to a cited third party, not the manuscript's own
+    # authors — must stay clean (the reason the phrase list does not carry
+    # a bare 作者先前 entry).
+    package = tmp_path / "pkg"
+    package.mkdir()
+    (package / "paper.md").write_text("Body.\n", encoding="utf-8")
+    (package / "paper_anonymized.md").write_text(
+        "# 匿名稿\n\n該作者先前的研究指出品保回饋迴圈存在斷點。\n",
+        encoding="utf-8")
+    _rc, report = run_dir(package)
+    a5 = checks_by_id(report)["A5"]
+    assert a5["status"] == "pass"
+
+
 # --- codex slice-3 review round ----------------------------------------------
 
 def test_A4_docx_only_variant_is_not_checked_not_applicable(tmp_path):

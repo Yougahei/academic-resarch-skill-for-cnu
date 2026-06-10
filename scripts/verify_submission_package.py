@@ -896,13 +896,14 @@ _BLIND_STEM_TOKENS = frozenset(
 # and must not satisfy A7 under a declared double-blind venue.
 _VARIANT_SUFFIXES = (".md", ".tex", ".txt", ".docx", ".pdf")
 
-# A5 self-citation phrasing (§3.1 — heuristic by class). zh-TW list drafted
-# first-party per spec §10 item 1; curation pending maintainer review.
+# A5 self-citation phrasing (§3.1 — heuristic by class). zh-TW list curated
+# by the maintainer (#394 follow-up, 2026-06-10). 本文作者先前 is anchored on
+# the 本文 prefix because bare 作者先前 matches 該作者先前 (a third party).
 _SELF_CITATION_PHRASES = (
     "our previous work", "our earlier study", "our prior work",
     "we previously showed", "we have previously", "in our previous",
     "我們先前的研究", "我們過去的研究", "我們先前曾", "我們已於先前",
-    "筆者先前的研究", "本研究團隊先前",
+    "筆者先前的研究", "本研究團隊先前", "本文作者先前",
 )
 
 _ACK_TITLE_RE = re.compile(r"acknowledg(?:e)?ments?|致謝", re.IGNORECASE)
