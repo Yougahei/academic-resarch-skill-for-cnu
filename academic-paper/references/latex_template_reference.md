@@ -360,6 +360,14 @@ If a user-provided official template conflicts with a built-in profile, surface 
 | Guangxi University Undergraduate Thesis/Design | `templates/chinese_thesis_guangxi_undergrad_template.tex` | Undergraduate thesis/design fallback when no official `.tex`/`.docx` template is supplied |
 | Sichuan University Master/Doctoral Dissertation | `templates/chinese_thesis_sichuan_grad_template.tex` | Graduate dissertation fallback when no official graduate-school template is supplied |
 
+### Built-In DOCX Reference Files
+
+| Profile | Reference DOCX | Intended Use |
+|---------|----------------|--------------|
+| Mainland China University Thesis Fallback | `templates/docx/mainland_fallback_reference.docx` | Generic mainland university Word fallback |
+| Guangxi University Undergraduate Thesis/Design | `templates/docx/guangxi_undergrad_reference.docx` | Undergraduate DOCX fallback when no official Word template is supplied |
+| Sichuan University Master/Doctoral Dissertation | `templates/docx/sichuan_grad_reference.docx` | Graduate DOCX fallback when no official Word template is supplied |
+
 ### Required Engine And Citation Style
 
 - Compile with XeLaTeX.
@@ -409,6 +417,16 @@ pandoc paper.md -o paper.docx \
   --citeproc \
   --bibliography=references.bib \
   --csl=chinese-gb7714-2005-numeric.csl
+```
+
+Student-facing wrapper:
+
+```bash
+python3 scripts/export_chinese_thesis.py \
+  --input paper.md \
+  --profile guangxi-undergrad \
+  --format docx \
+  --output final.docx
 ```
 
 ## Common LaTeX Compilation Issues

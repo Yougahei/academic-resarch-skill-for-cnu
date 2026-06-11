@@ -152,6 +152,7 @@ User Input →
 - Need a mainland Chinese university thesis formatting audit report
 - Need to check thesis table of contents, pagination, heading hierarchy, front matter, figure/table/equation formatting, or archive materials
 - Need Chinese university thesis output through a LaTeX/Pandoc template profile
+- Need a generated Chinese university thesis DOCX using a built-in or official Word reference template
 
 **Not Applicable When**:
 - No existing content (→ full mode)

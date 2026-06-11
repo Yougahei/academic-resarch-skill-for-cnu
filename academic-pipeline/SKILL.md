@@ -589,7 +589,7 @@ Stage 3': academic-paper-reviewer
 Stage 4/4': academic-paper (revision mode)
 Stage 5: academic-paper (format-convert mode)
   - Step 1: Ask user which academic formatting style (APA 7.0 / Chicago / IEEE, etc.)
-  - Step 2: Produce MD, then generate DOCX via Pandoc when available, otherwise conversion instructions
+  - Step 2: Produce MD, then generate DOCX via Pandoc when available, otherwise conversion instructions. For Chinese university thesis DOCX, use `scripts/export_chinese_thesis.py` with the selected built-in or official reference DOCX.
   - Step 3: If the selected target is Chinese university thesis formatting, select the official school template when supplied; otherwise use the built-in Guangxi/Sichuan/fallback LaTeX/Pandoc profile
   - Step 4: Produce LaTeX (using corresponding document class/template, e.g., apa7 class for APA 7.0 or Chinese thesis template for CNU profiles)
   - Step 5: After user confirms content is correct, tectonic compiles PDF (final version)

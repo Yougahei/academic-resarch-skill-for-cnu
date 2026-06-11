@@ -263,6 +263,9 @@ References:
 Built-in fallback templates:
 - `templates/chinese_thesis_guangxi_undergrad_template.tex`
 - `templates/chinese_thesis_sichuan_grad_template.tex`
+- `templates/docx/mainland_fallback_reference.docx`
+- `templates/docx/guangxi_undergrad_reference.docx`
+- `templates/docx/sichuan_grad_reference.docx`
 
 ### Template Selection Rules
 
@@ -274,9 +277,32 @@ Built-in fallback templates:
 ### Output Behavior
 
 - LaTeX/PDF: generate through Pandoc + XeLaTeX with the selected `.tex` template.
-- DOCX: preserve the existing Pandoc `--reference-doc` mechanism. Use the user's official Word template when available; otherwise provide a fallback DOCX command and mark final Word/WPS visual checks as required.
+- DOCX: preserve the existing Pandoc `--reference-doc` mechanism. Use the user's official Word template when available; otherwise use the built-in profile reference DOCX.
+- Student-facing export: when a concrete artifact is requested, use `scripts/export_chinese_thesis.py` to select the profile and call Pandoc consistently.
 - Citations: use GB/T 7714 CSL for mainland Chinese university fallback unless the user or school specifies another style.
 - Do not treat the Taiwan-oriented APA 7 Chinese citation guide as the mainland Chinese university default.
+
+### Student-Facing Export Commands
+
+```bash
+python3 scripts/export_chinese_thesis.py \
+  --input paper.md \
+  --profile guangxi-undergrad \
+  --format docx \
+  --output final.docx
+```
+
+For PDF output:
+
+```bash
+python3 scripts/export_chinese_thesis.py \
+  --input paper.md \
+  --profile sichuan-grad \
+  --format pdf \
+  --output final.pdf
+```
+
+The script writes a sibling `.format_report.md` file. For DOCX output, the report reminds the user to open the file in Word/WPS/LibreOffice and refresh fields for table of contents, page numbers, captions, headers, and final pagination.
 
 ### Handling Footnotes (Chicago Notes-Bibliography)
 
@@ -583,6 +609,13 @@ pandoc paper.md -o paper.docx \
   --reference-doc=template_zh.docx \
   --pdf-engine=xelatex \
   -V CJKmainfont="Noto Sans CJK TC"
+
+# Chinese university thesis profile
+python3 scripts/export_chinese_thesis.py \
+  --input paper.md \
+  --profile guangxi-undergrad \
+  --format docx \
+  --output final.docx
 ```
 
 **Style Mapping (Markdown -> Word Styles)**:

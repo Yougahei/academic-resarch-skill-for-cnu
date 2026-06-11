@@ -96,7 +96,7 @@ Activate `plan` mode when the user wants guidance, step-by-step planning, or exp
 | 6 | `citation_compliance_agent` | Citation format verification, reference list completeness, DOI checking | Phase 5a |
 | 7 | `abstract_bilingual_agent` | Bilingual abstract (zh-TW + EN), 5-7 keywords each | Phase 5b |
 | 8 | `peer_reviewer_agent` | Simulated double-blind review, five-dimension scoring, revision suggestions (max 2 rounds) | Phase 6 |
-| 9 | `formatter_agent` | Convert to LaTeX/DOCX (via Pandoc)/PDF/Markdown, journal formatting, cover letter, citation format conversion (APA 7 / Chicago / MLA / IEEE / Vancouver), Chinese university thesis formatting audit, Chinese university LaTeX/Pandoc thesis template output | Phase 7 |
+| 9 | `formatter_agent` | Convert to LaTeX/DOCX (via Pandoc)/PDF/Markdown, journal formatting, cover letter, citation format conversion (APA 7 / Chicago / MLA / IEEE / Vancouver), Chinese university thesis formatting audit, Chinese university LaTeX/Pandoc thesis template output, Chinese university DOCX reference-template export | Phase 7 |
 | 10 | `socratic_mentor_agent` | Plan mode Socratic mentor: chapter-by-chapter guidance, convergence criteria (4 signals), question taxonomy (4 types), INSIGHT extraction | Plan Step 0-3 |
 | 11 | `visualization_agent` | Parse paper data and generate publication-quality figure code (Python matplotlib / R ggplot2) with APA 7.0 formatting, colorblind-safe palettes, and LaTeX integration | Phase 4 / Phase 7 |
 | 12 | `revision_coach_agent` | Parse unstructured reviewer comments into structured Revision Roadmap; classify, map, and prioritize comments; works standalone without prior pipeline execution | Revision-Coach mode |
@@ -274,7 +274,7 @@ See `references/mode_selection_guide.md` for details.
 | `revision` | "Revise paper" | 8->5->6 | Revised draft with tracked changes (uses `templates/revision_tracking_template.md`) |
 | `abstract-only` | "Write abstract" | 1->7 | Bilingual abstract + keywords |
 | `lit-review` | "Literature review" | 1->2 | Annotated bibliography + synthesis |
-| `format-convert` | "Convert to LaTeX" / "Convert citations to [format]" / "按中国高校论文格式检查" / "按中国高校论文模板输出" | 9 only | Formatted document; includes citation format conversion (APA 7 / Chicago / MLA / IEEE / Vancouver); can also emit Chinese Thesis Format Audit Report or Chinese university thesis template output |
+| `format-convert` | "Convert to LaTeX" / "Convert citations to [format]" / "按中国高校论文格式检查" / "按中国高校论文模板输出" / "生成中国高校论文 Word" | 9 only | Formatted document; includes citation format conversion (APA 7 / Chicago / MLA / IEEE / Vancouver); can also emit Chinese Thesis Format Audit Report or Chinese university thesis template output |
 | `citation-check` | "Check citations" / "按 GB/T 7714 检查引用" | 6 only | Citation error report |
 | `plan` | "guide my paper" / "help me plan my paper" | 1->10->3->4 | Chapter Plan + INSIGHT Collection |
 | `revision-coach` | "parse reviews" / "revision roadmap" / "I got reviewer comments" | 12 only | Revision Roadmap + optional Tracking Template + Response Letter Skeleton |
@@ -362,7 +362,7 @@ See `agents/intake_agent.md` for the complete field definitions of the Phase 0 c
 - Disclosure (v3.2): `disclosure_mode_protocol` (venue-specific AI-usage statement generation), `venue_disclosure_policies` (v1 database: ICLR, NeurIPS, Nature, Science, ACL, EMNLP)
 - Also: `deep-research/references/apa7_style_guide.md` (base reference, extended here)
 
-**Templates** (13 files in `templates/`): `imrad`, `literature_review`, `case_study`, `theoretical_paper`, `policy_brief`, `conference_paper`, `latex_article_template.tex`, `chinese_thesis_guangxi_undergrad_template.tex`, `chinese_thesis_sichuan_grad_template.tex`, `bilingual_abstract`, `credit_statement`, `funding_statement`, `revision_tracking` (4 status types).
+**Templates** (16 files in `templates/`): `imrad`, `literature_review`, `case_study`, `theoretical_paper`, `policy_brief`, `conference_paper`, `latex_article_template.tex`, `chinese_thesis_guangxi_undergrad_template.tex`, `chinese_thesis_sichuan_grad_template.tex`, `docx/mainland_fallback_reference.docx`, `docx/guangxi_undergrad_reference.docx`, `docx/sichuan_grad_reference.docx`, `bilingual_abstract`, `credit_statement`, `funding_statement`, `revision_tracking` (4 status types).
 
 **Examples** (9 files in `examples/`): `imrad_hei_example`, `literature_review_example`, `plan_mode_guided_writing`, `chinese_paper_example`, `revision_mode_example`, `revision_recovery_example`, `clinical_citation_verification_checklist`, `clinical_epistemic_status_example`, `version_family_reconciliation_example`.
 
