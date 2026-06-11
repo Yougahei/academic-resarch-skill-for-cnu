@@ -80,13 +80,20 @@ def _write_changelog(
     )
 
 
-def _write_plugin_manifests(root: Path, version: str) -> None:
-    """Fixture .claude-plugin/{plugin,marketplace}.json at `version` (invariant 4)."""
+def _write_plugin_manifests(
+    root: Path, version: str, description: str | None = None
+) -> None:
+    """Fixture .claude-plugin/{plugin,marketplace}.json at `version` (invariant 4).
+    `description` (when given) lands in plugin.json for the invariant-8
+    "N-agent" claim tests."""
     import json
     plugin_dir = root / ".claude-plugin"
     plugin_dir.mkdir(parents=True, exist_ok=True)
+    plugin_obj: dict[str, str] = {"name": "fixture", "version": version}
+    if description is not None:
+        plugin_obj["description"] = description
     (plugin_dir / "plugin.json").write_text(
-        json.dumps({"name": "fixture", "version": version}), encoding="utf-8"
+        json.dumps(plugin_obj), encoding="utf-8"
     )
     (plugin_dir / "marketplace.json").write_text(
         json.dumps({"name": "fixture", "plugins": [{"name": "fixture", "version": version}]}),
@@ -702,6 +709,84 @@ class TestVersionConsistency(unittest.TestCase):
             result = _run(root)
             self.assertEqual(result.returncode, 1, msg=f"stdout={result.stdout!r}")
             self.assertIn("3.4.0", result.stdout)
+
+
+class TestAgentCountClaim(unittest.TestCase):
+    """Invariant 8 (#414): plugin.json description "N-agent" claim equals the
+    tree's unique *_agent.md count (symlinks resolved, not double-counted)."""
+
+    @staticmethod
+    def _write_agents(root: Path, names: list[str]) -> None:
+        agents_dir = root / "deep-research" / "agents"
+        agents_dir.mkdir(parents=True, exist_ok=True)
+        for name in names:
+            (agents_dir / f"{name}_agent.md").write_text(
+                f"# {name}\n", encoding="utf-8"
+            )
+
+    def test_agent_claim_drift_fails(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_aligned_fixture(root)
+            _write_plugin_manifests(
+                root, "3.5.0", description="fixture, 3-agent ensemble, more"
+            )
+            self._write_agents(root, ["alpha", "beta"])
+            result = _run(root)
+            self.assertEqual(result.returncode, 1, msg=f"stdout={result.stdout!r}")
+            self.assertIn("3-agent", result.stdout)
+            self.assertIn("2", result.stdout)
+
+    def test_agent_claim_matching_passes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_aligned_fixture(root)
+            _write_plugin_manifests(
+                root, "3.5.0", description="fixture, 2-agent ensemble, more"
+            )
+            self._write_agents(root, ["alpha", "beta"])
+            result = _run(root)
+            self.assertEqual(
+                result.returncode, 0,
+                msg=f"stdout={result.stdout!r} stderr={result.stderr!r}",
+            )
+
+    def test_agent_claim_symlink_alias_not_double_counted(self) -> None:
+        """A symlink alias of a real agent file (the agents/ plugin-dir
+        pattern) resolves to the same target and counts once."""
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_aligned_fixture(root)
+            _write_plugin_manifests(
+                root, "3.5.0", description="fixture, 2-agent ensemble, more"
+            )
+            self._write_agents(root, ["alpha", "beta"])
+            link_dir = root / "agents"
+            link_dir.mkdir()
+            (link_dir / "alpha_agent.md").symlink_to(
+                root / "deep-research" / "agents" / "alpha_agent.md"
+            )
+            result = _run(root)
+            self.assertEqual(
+                result.returncode, 0,
+                msg=f"stdout={result.stdout!r} stderr={result.stderr!r}",
+            )
+
+    def test_no_agent_claim_skips(self) -> None:
+        """A description without an N-agent token is not gated (the claim is
+        optional; only a stated number must be true)."""
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_aligned_fixture(root)
+            _write_plugin_manifests(
+                root, "3.5.0", description="fixture without a count claim"
+            )
+            self._write_agents(root, ["alpha", "beta"])
+            result = _run(root)
+            self.assertEqual(
+                result.returncode, 0,
+                msg=f"stdout={result.stdout!r} stderr={result.stderr!r}",
+            )
 
 
 if __name__ == "__main__":

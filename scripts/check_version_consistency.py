@@ -20,6 +20,10 @@ Invariants enforced:
   7. Every version-bearing H2 heading in docs/<name>.md has a matching
      version-bearing H2 (same version) in docs/<name>.zh-TW.md and vice versa.
      Plain headings may differ — only version TAGS must stay in lockstep.
+  8. The plugin.json description's "N-agent" claim (when present) equals the
+     number of unique *_agent.md files in the tree — symlinks resolved so the
+     agents/ plugin aliases do not double-count (#414: the advertised number
+     had silently drifted from the tree).
 
 Runs from repo root by default; `--path` lets tests point at a fake tree.
 """
@@ -72,6 +76,9 @@ H2_RE = re.compile(r"^##\s+(.*?)\s*$", re.MULTILINE)
 H2_VERSION_RE = re.compile(r"(?<![\w.])v" + _VSEG + r"(?![\d.\-A-Za-z])")
 
 NON_VERSION_CHANGELOG_TOKENS = frozenset({"Unreleased"})
+
+# Invariant 8: the outward-facing agent-count claim, e.g. "38-agent ensemble".
+AGENT_CLAIM_RE = re.compile(r"(\d+)-agent")
 
 PIPELINE_SKILL_NAME = "academic-pipeline"
 
@@ -251,6 +258,10 @@ def check(root: Path) -> list[str]:
     # suite version; pairs each docs/*.md with its docs/*.zh-TW.md sibling).
     errors.extend(_check_zhtw_heading_parity(root))
 
+    # Invariant 8: plugin.json "N-agent" description claim equals the tree's
+    # unique *_agent.md count (independent of suite version).
+    errors.extend(_check_agent_count_claim(root))
+
     return errors
 
 
@@ -405,6 +416,41 @@ def _check_zhtw_heading_parity(root: Path) -> list[str]:
                 f"{en.name} — version drift"
             )
     return errors
+
+
+def _check_agent_count_claim(root: Path) -> list[str]:
+    """Invariant 8 (#414): when plugin.json's description advertises an
+    "N-agent" count, N must equal the number of unique *_agent.md files in
+    the tree. Symlinks are resolved before counting so the agents/ plugin
+    aliases of deep-research agents count once. Missing/malformed manifest or
+    a description without a count claim is NOT an invariant-8 error — the
+    manifest problems are invariant 4's to report, and the claim is optional
+    (only a stated number must be true)."""
+    plugin_json = root / ".claude-plugin" / "plugin.json"
+    if not plugin_json.is_file():
+        return []
+    try:
+        data = json.loads(plugin_json.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, ValueError):
+        return []
+    description = data.get("description")
+    if not isinstance(description, str):
+        return []
+    m = AGENT_CLAIM_RE.search(description)
+    if m is None:
+        return []
+    claimed = int(m.group(1))
+    actual = len({
+        p.resolve()
+        for p in root.rglob("*_agent.md")
+        if ".git" not in p.parts
+    })
+    if claimed != actual:
+        return [
+            f"{plugin_json}: description claims {claimed}-agent but the tree "
+            f"has {actual} unique *_agent.md files (symlinks deduplicated)"
+        ]
+    return []
 
 
 def main() -> int:
