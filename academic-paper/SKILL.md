@@ -52,7 +52,7 @@ metadata:
 
 **English**: write paper, academic paper, paper outline, write abstract, revise paper, literature review paper, check citations, convert to LaTeX, convert format, format paper, conference paper, journal article, thesis chapter, research paper, guide my paper, help me plan my paper, step by step paper, draft manuscript, write methodology, write discussion, parse reviews, revision roadmap, help me with my revision, I got reviewer comments, convert citations
 
-**简体中文**: 写论文, 学术论文, 毕业论文, 学位论文, 课程论文, 论文大纲, 写摘要, 修改论文, 文献综述, 检查引用, 转 LaTeX, 转 DOCX, 转换格式, 期刊论文, 研究论文, 引导我写论文, 帮我规划论文, 逐步写论文, 写方法论, 写讨论, 导师意见, 审稿意见, 盲审意见, 修订路线图, 帮我修改, 我收到修改意见, 转换引用格式
+**简体中文**: 写论文, 学术论文, 毕业论文, 学位论文, 课程论文, 论文大纲, 写摘要, 修改论文, 文献综述, 检查引用, 转 LaTeX, 转 DOCX, 转换格式, 期刊论文, 研究论文, 引导我写论文, 帮我规划论文, 逐步写论文, 写方法论, 写讨论, 导师意见, 审稿意见, 盲审意见, 修订路线图, 帮我修改, 我收到修改意见, 转换引用格式, 中国高校论文格式检查, 本科毕业论文格式检查, 学位论文格式检查, 目录页码检查
 
 **繁體中文**: 寫論文, 學術論文, 論文大綱, 寫摘要, 修改論文, 文獻回顧論文, 檢查引用, 轉 LaTeX, 轉換格式, 研討會論文, 期刊文章, 學位論文, 研究論文, 引導我寫論文, 幫我規劃論文, 逐步寫論文, 寫方法論, 寫討論, 審查意見, 修訂路線圖, 幫我修改, 我收到審查意見, 轉換引用格式
 
@@ -96,7 +96,7 @@ Activate `plan` mode when the user wants guidance, step-by-step planning, or exp
 | 6 | `citation_compliance_agent` | Citation format verification, reference list completeness, DOI checking | Phase 5a |
 | 7 | `abstract_bilingual_agent` | Bilingual abstract (zh-TW + EN), 5-7 keywords each | Phase 5b |
 | 8 | `peer_reviewer_agent` | Simulated double-blind review, five-dimension scoring, revision suggestions (max 2 rounds) | Phase 6 |
-| 9 | `formatter_agent` | Convert to LaTeX/DOCX (via Pandoc)/PDF/Markdown, journal formatting, cover letter, citation format conversion (APA 7 / Chicago / MLA / IEEE / Vancouver) | Phase 7 |
+| 9 | `formatter_agent` | Convert to LaTeX/DOCX (via Pandoc)/PDF/Markdown, journal formatting, cover letter, citation format conversion (APA 7 / Chicago / MLA / IEEE / Vancouver), Chinese university thesis formatting audit | Phase 7 |
 | 10 | `socratic_mentor_agent` | Plan mode Socratic mentor: chapter-by-chapter guidance, convergence criteria (4 signals), question taxonomy (4 types), INSIGHT extraction | Plan Step 0-3 |
 | 11 | `visualization_agent` | Parse paper data and generate publication-quality figure code (Python matplotlib / R ggplot2) with APA 7.0 formatting, colorblind-safe palettes, and LaTeX integration | Phase 4 / Phase 7 |
 | 12 | `revision_coach_agent` | Parse unstructured reviewer comments into structured Revision Roadmap; classify, map, and prioritize comments; works standalone without prior pipeline execution | Revision-Coach mode |
@@ -272,8 +272,8 @@ See `references/mode_selection_guide.md` for details.
 | `revision` | "Revise paper" | 8->5->6 | Revised draft with tracked changes (uses `templates/revision_tracking_template.md`) |
 | `abstract-only` | "Write abstract" | 1->7 | Bilingual abstract + keywords |
 | `lit-review` | "Literature review" | 1->2 | Annotated bibliography + synthesis |
-| `format-convert` | "Convert to LaTeX" / "Convert citations to [format]" | 9 only | Formatted document; includes citation format conversion (APA 7 / Chicago / MLA / IEEE / Vancouver) |
-| `citation-check` | "Check citations" | 6 only | Citation error report |
+| `format-convert` | "Convert to LaTeX" / "Convert citations to [format]" / "按中国高校论文格式检查" | 9 only | Formatted document; includes citation format conversion (APA 7 / Chicago / MLA / IEEE / Vancouver); can also emit Chinese Thesis Format Audit Report |
+| `citation-check` | "Check citations" / "按 GB/T 7714 检查引用" | 6 only | Citation error report |
 | `plan` | "guide my paper" / "help me plan my paper" | 1->10->3->4 | Chapter Plan + INSIGHT Collection |
 | `revision-coach` | "parse reviews" / "revision roadmap" / "I got reviewer comments" | 12 only | Revision Roadmap + optional Tracking Template + Response Letter Skeleton |
 | **`disclosure`** (v3.2) | **"AI disclosure for Nature" / "generate AI usage statement"** | **9 only** | **Venue-specific AI-usage disclosure paragraph(s) + placement instructions** |
@@ -289,7 +289,7 @@ See `references/mode_selection_guide.md` for details.
 | Have unstructured reviewer comments | `revision-coach` | balanced |
 | Just need an abstract | `abstract-only` | fidelity |
 | Need to check/fix citations | `citation-check` | fidelity |
-| Need to convert format (LaTeX, DOCX) or citation style | `format-convert` | fidelity |
+| Need to convert format (LaTeX, DOCX), citation style, or audit Chinese thesis formatting | `format-convert` | fidelity |
 | Want a systematic literature review paper | `lit-review` | fidelity |
 | Need a venue-specific AI-usage disclosure statement for submission | `disclosure` | fidelity |
 
@@ -350,11 +350,11 @@ See `agents/intake_agent.md` for the complete field definitions of the Phase 0 c
 
 **Agent definitions**: `agents/{agent_name}.md` — one file per agent (12 total, matching Agent Team table above).
 
-**References** (19 files in `references/`):
+**References** (21 files in `references/`):
 - Citation: `apa7_extended_guide`, `apa7_chinese_citation_guide`, `citation_format_switcher`
 - Writing: `academic_writing_style`, `writing_quality_check`, `writing_judgment_framework`
 - Structure: `paper_structure_patterns` (6 types), `abstract_writing_guide`
-- Domain: `hei_domain_glossary` (bilingual), `journal_submission_guide`, `latex_template_reference`
+- Domain: `hei_domain_glossary` (bilingual), `journal_submission_guide`, `latex_template_reference`, `chinese_higher_education_thesis_format`, `chinese_thesis_format_audit_report`
 - Process: `failure_paths` (12 scenarios), `mode_selection_guide` (10 modes), `plan_mode_protocol`, `workflow_phase_details`
 - Ethics: `credit_authorship_guide` (CRediT 14 roles), `funding_statement_guide`, `statistical_visualization_standards`
 - Disclosure (v3.2): `disclosure_mode_protocol` (venue-specific AI-usage statement generation), `venue_disclosure_policies` (v1 database: ICLR, NeurIPS, Nature, Science, ACL, EMNLP)

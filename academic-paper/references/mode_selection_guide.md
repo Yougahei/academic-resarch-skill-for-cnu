@@ -149,12 +149,15 @@ User Input →
 - Already have paper content, need format conversion
 - Markdown → LaTeX / DOCX / PDF
 - Need to comply with a specific journal's formatting requirements
+- Need a mainland Chinese university thesis formatting audit report
+- Need to check thesis table of contents, pagination, heading hierarchy, front matter, figure/table/equation formatting, or archive materials
 
 **Not Applicable When**:
 - No existing content (→ full mode)
 - Need content modifications (→ revision mode)
+- Need automatic DOCX rewriting or template parsing (out of scope for this mode; use a later DOCX automation workflow)
 
-**Expected Output**: Document in target format
+**Expected Output**: Document in target format, or a structured Chinese Thesis Format Audit Report when the target is mainland Chinese university thesis formatting
 **Expected Duration**: Short
 **Agents Used**: formatter used standalone
 
@@ -288,6 +291,8 @@ Before conversion, ALL of the following must be true:
 "Do a literature review on..."           -> lit-review
 "Convert this paper to LaTeX"            -> format-convert
 "Convert citations to IEEE"              -> format-convert
+"Check this thesis against Guangxi University undergraduate formatting" -> format-convert
+"按四川大学硕博论文格式检查目录、页码和标题" -> format-convert
 "Check the citations in this paper"      -> citation-check
 "guide my paper"                         -> plan
 "help me plan my paper"                  -> plan
