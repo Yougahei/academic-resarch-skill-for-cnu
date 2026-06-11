@@ -90,8 +90,8 @@ ln -s ~/acdemic-resarch-skill-for-CNU/academic-pipeline .claude/skills/academic-
 
 如果要进一步服务中国高校论文，可以优先增加：
 
-- 学校论文模板解析
-- GB/T 7714 引用格式检查
+- 学校论文模板解析；默认格式参考见 [中国高校本科论文格式参考](academic-paper/references/chinese_undergraduate_thesis_format.md)
+- GB/T 7714 引用格式检查；原版 APA 7 中文引用并不是大陆本科论文默认规范
 - 开题报告与任务书模板
 - 学院格式规范清单
 - 中文摘要、英文摘要和关键词规范
