@@ -363,7 +363,7 @@ If a user-provided official template conflicts with a built-in profile, surface 
 ### Required Engine And Citation Style
 
 - Compile with XeLaTeX.
-- Use CJK fonts available on the user's machine. The built-in templates default to SimSun/SimHei with Times New Roman for Latin text.
+- Use CJK fonts available on the user's machine. The built-in templates default to TeX Live's bundled FandolSong/FandolHei fonts with Times New Roman for Latin text, so they can compile on a fresh TeX Live install without requiring Windows-only SimSun/SimHei fonts.
 - Prefer GB/T 7714 CSL for Pandoc citation processing when the user targets mainland Chinese university thesis output.
 - APA 7 Chinese citation guidance remains available for Taiwan-style or APA-targeted Chinese work, but is not the mainland Chinese university fallback.
 
