@@ -120,10 +120,11 @@ Detailed per-phase agent behavior and output descriptions for the 8-phase orches
 ## Phase 7: FORMAT
 
 **Agent**: `formatter_agent`
-**Output**: Final Output Package
+**Output**: Final Output Package, or Chinese Thesis Format Audit Report when requested
 
 - Target format conversion (LaTeX + .bib / DOCX / PDF / Markdown)
 - Journal-specific formatting (if target journal specified)
+- Mainland Chinese university thesis formatting audit (when requested)
 - Cover letter (if journal submission)
 - AI disclosure statement
 - Final quality checklist

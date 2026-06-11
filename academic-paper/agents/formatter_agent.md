@@ -208,6 +208,49 @@ Step 4: Verification
 | DOI format | https://doi.org/... | https://doi.org/... | https://doi.org/... | doi:... | doi:... | doi:... |
 | Ordering | Alphabetical | Alphabetical | Alphabetical | Alphabetical | Order of appearance | Order of appearance |
 
+## Chinese University Thesis Formatting Audit
+
+When the user asks to check mainland Chinese university thesis formatting (for example, "按中国高校论文格式检查", "按广西大学本科论文格式检查", "按四川大学硕博论文格式检查", "检查目录/页码/标题/图表格式"), produce a structured audit report instead of a converted artifact.
+
+References:
+- `references/chinese_higher_education_thesis_format.md`
+- `references/chinese_thesis_format_audit_report.md`
+
+This audit is part of `format-convert` / Phase 7 formatting. It does NOT rewrite the manuscript, modify DOCX files, or replace the existing LaTeX/DOCX/PDF/citation-conversion paths.
+
+### Profile Selection
+
+Apply rule priority in this order:
+
+1. User-provided school, graduate school, college, or department official template.
+2. User-provided advisor, defense, inspection, or archive requirement.
+3. User-provided sample from the same school and year.
+4. Built-in school profile from `chinese_higher_education_thesis_format.md`.
+5. Mainland China University Thesis Fallback.
+
+If the controlling profile is unclear, ask for the school, degree level, paper type, and official template. If the user wants to proceed without those inputs, use the fallback profile and mark the choice as an assumption.
+
+### Evidence Discipline
+
+Use the evidence statuses defined in `chinese_thesis_format_audit_report.md`: `verified`, `missing-input`, `conflict`, `profile-fallback`, and `not-applicable`.
+
+Do not infer DOCX-only facts from Markdown/plain text. Page size, margins, headers/footers, page breaks, table-of-contents fields, and rendered caption splitting require DOCX/PDF/template evidence. If that evidence is absent, mark the item as `missing-input` and explain what file is needed.
+
+### Required Report
+
+Emit a `## Chinese Thesis Format Audit Report` with these sections:
+
+1. Profile And Rule Priority
+2. Inputs Inspected
+3. Findings Summary
+4. Detailed Audit
+5. Items Requiring User Confirmation
+6. Action Checklist
+
+Cover at least these audit areas: page setup, front matter, abstracts and keywords, table of contents and pagination, heading hierarchy, body formatting, figures/tables/equations, references and GB/T 7714, declarations/appendices/acknowledgements, and process/archive materials where applicable.
+
+Severity labels: `Blocker`, `Major`, `Minor`, `Needs confirmation`.
+
 ### Handling Footnotes (Chicago Notes-Bibliography)
 
 When converting **to** Chicago Notes-Bibliography:

@@ -25,8 +25,8 @@
 | `revision-coach` | 修订路线规划 | 拆解审稿意见、生成回应框架 |
 | `abstract-only` | 摘要与关键词 | 中文摘要、英文摘要、中英双语摘要 |
 | `lit-review` | 文献综述型论文 | 写文献综述论文 |
-| `format-convert` | 格式转换 | 转 LaTeX、转 DOCX、改引用格式 |
-| `citation-check` | 引用检查 | 检查参考文献、核验引用 |
+| `format-convert` | 格式转换 | 转 LaTeX、转 DOCX、改引用格式、中国高校论文格式审查 |
+| `citation-check` | 引用检查 | 检查参考文献、核验引用、GB/T 7714 论文引用检查 |
 | `disclosure` | AI 使用声明 | 生成 AI 辅助写作声明 |
 
 ## academic-paper-reviewer

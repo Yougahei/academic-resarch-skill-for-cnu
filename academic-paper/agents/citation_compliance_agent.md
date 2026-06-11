@@ -302,6 +302,32 @@ Reference: `references/apa7_chinese_citation_guide.md`:
 | 7 | Multiple author connector | Chinese uses enumeration comma instead of regular comma: (Wang Daming, Li Xiaohua, 2024) |
 | 8 | et al. equivalent | Chinese uses "deng" (meaning "et al."): (Wang Daming et al., 2024) |
 
+### Mainland Chinese Thesis Citation Checks
+
+When the user asks for mainland Chinese university thesis citation checking, Chinese undergraduate thesis reference checking, Guangxi University thesis/design checking, Sichuan University dissertation checking, or GB/T 7714 checking, use:
+
+- `references/chinese_higher_education_thesis_format.md`
+- `references/chinese_thesis_format_audit_report.md` when the request includes broader thesis formatting audit areas
+
+Rules:
+
+- Do not treat APA 7 Chinese/Taiwan conventions as the default mainland university thesis standard.
+- Use GB/T 7714 as the fallback citation family unless the school or college template specifies another style.
+- If the user supplies school-specific rules, those rules outrank the built-in fallback.
+- If the input does not include enough reference-list metadata to verify GB/T 7714 fields, mark the item as requiring user completion rather than inventing fields.
+- Preserve existing APA, Chicago, MLA, IEEE, and Vancouver behavior when the user asks for those styles.
+
+Minimum thesis citation report items:
+
+| Check Item | Rule |
+|------------|------|
+| Citation family | School rule first; otherwise GB/T 7714 fallback |
+| In-text/reference cross-check | Every in-text citation must join to a reference-list entry |
+| Numbering/order | Numbered citations must match first-appearance or school-required ordering |
+| Chinese-English consistency | Do not mix APA-style Chinese references with GB/T 7714 unless the school explicitly requires it |
+| Metadata completeness | Authors, title, source, year, volume/issue/pages, DOI/URL/access date as required by source type |
+| Profile boundary | Flag Taiwan APA conventions when used as mainland thesis default without explicit requirement |
+
 ### Citation Consistency Check (Cross-Reference)
 
 ```
