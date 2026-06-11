@@ -1,5 +1,8 @@
 # acdemic-resarch-skill-for-CNU
 
+[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Yougahei/acdemic-resarch-skill-for-CNU)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](https://creativecommons.org/licenses/by-nc/4.0/)
+
 面向中国高校论文场景的 Academic Research Skills 二次开发版。
 
 本仓库 fork 自 [`Imbad0202/academic-research-skills`](https://github.com/Imbad0202/academic-research-skills)，保留原版的核心技能、agent、协议、测试与质量门禁，主要把入口文档、安装说明、使用教程和插件描述改为中文，并把应用场景调整为中国高校论文服务。

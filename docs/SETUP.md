@@ -89,7 +89,13 @@ brew install tectonic
 - 思源宋体 / Noto Serif CJK
 - Courier New
 
-## 可选环境变量
+## Material Passport `literature_corpus[]` adapters（v3.6.4+，可选）
+
+如果你已经维护 Zotero、Obsidian、PDF 文件夹等文献语料，可以先用 `scripts/adapters/` 中的参考适配器生成 Material Passport，让 ARS 在外部检索前优先读取你的本地文献库。
+
+这是可选能力。没有提供 `literature_corpus[]` 时，ARS 仍按外部数据库检索流程运行。
+
+## 可选环境变量（v3.5.1+）
 
 | 变量 | 作用 |
 |---|---|
@@ -99,6 +105,12 @@ brew install tectonic
 | `ARS_VERIFICATION_CACHE_PATH` | 指定引用验证缓存数据库路径 |
 
 这些变量默认关闭，不设置也可以正常使用。
+
+## 引用查验 cache（v3.11，#182）
+
+引用存在性查验会使用本地 SQLite 缓存，默认路径为 `~/.cache/ars/verification.db`。如需跨项目共用或移动到其他磁盘，可设置 `ARS_VERIFICATION_CACHE_PATH=/your/path.db`。
+
+单条引用缓存可通过 `/ars-cache-invalidate <citation_key>` 作废。该命令会移除该 citation key 下所有 resolver 和 query form 的缓存行；如果没有缓存，则按幂等 no-op 处理。
 
 ## 面向中国高校的资料准备
 
