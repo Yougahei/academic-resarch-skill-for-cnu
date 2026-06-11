@@ -251,6 +251,34 @@ Cover at least these audit areas: page setup, front matter, abstracts and keywor
 
 Severity labels: `Blocker`, `Major`, `Minor`, `Needs confirmation`.
 
+## Chinese University DOCX Final Formatting
+
+When the user supplies a `.docx` thesis draft and asks for final Chinese university thesis formatting, use the deterministic helper:
+
+```bash
+python3 scripts/docx_thesis_formatter.py <input.docx> \
+  --profile <mainland-fallback|guangxi-undergrad|sichuan-grad> \
+  --output <formatted.docx> \
+  --title "<thesis title>" \
+  --report <format-report.md>
+```
+
+The helper creates a formatted copy and a Markdown report. It is safe-by-default: it refuses to overwrite the input file and only replaces an existing output when `--force-overwrite-output` is explicitly passed.
+
+### Supported First-Generation Operations
+
+- Page size and margins.
+- Normal/body style font, size, first-line indent, and fixed line spacing.
+- Heading 1-4 style definitions.
+- Basic figure/table caption style normalization.
+- Section header text when supported by the selected profile.
+- Centered footer `PAGE` field.
+- Markdown report with applied changes and manual verification items.
+
+### Manual Verification Required
+
+Do not claim final visual fidelity after running the helper. Tell the user to open the generated DOCX in Word/WPS/LibreOffice and refresh fields, table of contents, and final pagination. The helper does not generate official covers, school seals, signatures, originality declarations, or authorization pages from memory.
+
 ### Handling Footnotes (Chicago Notes-Bibliography)
 
 When converting **to** Chicago Notes-Bibliography:

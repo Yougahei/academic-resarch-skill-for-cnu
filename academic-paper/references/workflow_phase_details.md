@@ -125,6 +125,7 @@ Detailed per-phase agent behavior and output descriptions for the 8-phase orches
 - Target format conversion (LaTeX + .bib / DOCX / PDF / Markdown)
 - Journal-specific formatting (if target journal specified)
 - Mainland Chinese university thesis formatting audit (when requested)
+- Safe DOCX final-formatting copy via `scripts/docx_thesis_formatter.py` (when a DOCX draft is supplied)
 - Cover letter (if journal submission)
 - AI disclosure statement
 - Final quality checklist
