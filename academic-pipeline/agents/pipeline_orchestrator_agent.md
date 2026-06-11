@@ -520,7 +520,7 @@ Reference helper: `scripts/slr_lineage.py` `emit(stages, incoming_slr_lineage)`.
 | Stage 4 -> 3' | Revised Draft, Response to Reviewers | Schema 4 (revised) + Schema 8 (Response to Reviewers) | Pass to reviewer (marked as verification round) |
 | Stage 3' -> **coaching** -> 4' | New Revision Roadmap (if Major) | Schema 7 (Revision Roadmap) | **First Socratic dialogue** -> academic-paper revision mode input |
 | Stage 4/4' -> 4.5 | Revised/Re-Revised Draft | Schema 4 (revised) | Pass to integrity_verification_agent (final verification) |
-| Stage 4.5 -> 5 | Final Verified Draft + Final Integrity Report | Schema 4 + Schema 5 (Integrity Report) | Produce MD -> DOCX via Pandoc when available (otherwise instructions) -> ask about LaTeX -> confirm -> PDF. Carry forward `experiment_alignment_results[]` + `experiment_intake_declaration` (#260) to formatter surface + Stage 6 histogram |
+| Stage 4.5 -> 5 | Final Verified Draft + Final Integrity Report | Schema 4 + Schema 5 (Integrity Report) | Preserve the original finalization path: produce MD -> DOCX via Pandoc when available (otherwise instructions) -> ask about LaTeX -> confirm -> PDF. If the user explicitly selects Chinese university DOCX final formatting, additionally call `scripts/docx_thesis_formatter.py` to produce a formatted DOCX copy + report. Carry forward `experiment_alignment_results[]` + `experiment_intake_declaration` (#260) to formatter surface + Stage 6 histogram |
 
 **All artifacts must carry a Material Passport (Schema 9)** with `origin_skill`, `origin_mode`, `origin_date`, `verification_status`, and `version_label`. From v3.7.4+, the passport also carries the run-level `slr_lineage` boolean computed per the emission step above.
 
@@ -536,7 +536,7 @@ Reference helper: `scripts/slr_lineage.py` `emit(stages, incoming_slr_lineage)`.
 | Stage 3' gives Major | Enter Stage 4' (last revision opportunity); after revision, proceed directly to Stage 4.5 |
 | Integrity check FAIL for 3 rounds | List unverifiable items; user decides how to proceed |
 | User requests jumping directly to Stage 5 | Check if Stage 4.5 has been passed; if not, must do final integrity verification first |
-| Stage 5 output process | Step 1: Produce MD -> Step 2: Generate DOCX via Pandoc when available (otherwise provide instructions) -> Step 3: Ask "Need LaTeX?" -> Step 4: User confirms content is correct -> Step 5: Produce PDF (final version) |
+| Stage 5 output process | Step 1: Produce MD -> Step 2: Generate DOCX via Pandoc when available (otherwise provide instructions) -> Step 3: if Chinese university DOCX final formatting is requested, generate a separate formatted DOCX copy + report via `scripts/docx_thesis_formatter.py` -> Step 4: Ask "Need LaTeX?" -> Step 5: User confirms content is correct -> Step 6: Produce PDF (final version) |
 | Error during skill execution | Do not self-repair; report error and suggest: retry / switch mode / pause. Do not skip mandatory integrity or failure-mode gates |
 
 ---

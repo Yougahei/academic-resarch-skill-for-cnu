@@ -143,7 +143,7 @@ This document defines all legal states, transition conditions, transition action
 | INIT | Stage 2.5 | User has complete paper | Launch integrity_verification_agent |
 | INIT | Stage 3 | User has verified paper + integrity report | Confirm paper language/domain, launch reviewer |
 | INIT | Stage 4 | User has review comments | Confirm paper + review comments, launch revision |
-| INIT | Stage 5 | User has final draft for format conversion | Confirm format requirements, launch format-convert |
+| INIT | Stage 5 | User has final draft for format conversion or Chinese university DOCX final formatting | Confirm format requirements, launch format-convert |
 | Stage 1 | **checkpoint** | Stage 1 completed | Wait for user confirmation |
 | checkpoint | Stage 2 | User confirms | handoff RQ Brief + Bibliography + Synthesis |
 | Stage 2 | **checkpoint** | Stage 2 completed, Paper Draft produced | Wait for user confirmation |
@@ -210,6 +210,7 @@ This document defines all legal states, transition conditions, transition action
 | **Re-Revised Draft** | **Stage 4'** | **Stage 4.5 (input)** | **Required (if executed)** |
 | **Integrity Report (Final)** | **Stage 4.5** | **Stage 5 (prerequisite)** | **Required** |
 | Final Paper | Stage 5 | END (delivery) | Required |
+| Chinese university formatted DOCX copy + report | Stage 5 | END (delivery) | Optional when user selects the CNU DOCX formatting branch |
 
 ---
 
