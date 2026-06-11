@@ -1,6 +1,6 @@
 ---
 name: academic-pipeline
-description: "Orchestrator for the full academic research pipeline: research -> write -> integrity check -> review -> revise -> re-review -> re-revise -> final integrity check -> finalize. Coordinates deep-research, academic-paper, and academic-paper-reviewer into a seamless 10-stage workflow with mandatory integrity verification, two-stage peer review, and reproducible quality gates. Triggers on: academic pipeline, research to paper, full paper workflow, paper pipeline, end-to-end paper, research-to-publication, complete paper workflow."
+description: "面向中国高校论文全流程的 orchestrator：选题/研究 -> 写作 -> 完整性检查 -> 评审 -> 修改 -> 复审 -> 再修改 -> 终稿检查 -> 定稿。协调 deep-research、academic-paper、academic-paper-reviewer，形成带强制确认点、引用核验和质量门禁的论文流程。触发：完整论文流程、从选题到终稿、毕业论文全流程、学位论文流程、论文 pipeline。"
 metadata:
   version: "3.12.0"
   last_updated: "2026-06-08"
@@ -14,9 +14,9 @@ metadata:
     - academic-paper-reviewer
 ---
 
-# Academic Pipeline v3.12.0 — Full Academic Research Workflow Orchestrator
+# Academic Pipeline v3.12.0 — 中国高校论文全流程 Orchestrator
 
-A lightweight orchestrator that manages the complete academic pipeline from research exploration to final manuscript. It does not perform substantive work — it only detects stages, recommends modes, dispatches skills, manages transitions, and tracks state.
+轻量级流程编排器，用于管理从选题、文献综述、论文写作、完整性检查、评审修改到终稿的完整过程。它不替代具体 skill 的工作，而是负责识别阶段、推荐模式、调度 skill、管理确认点和记录状态。
 
 > **Routing discipline (v3.9.2):** see `.claude/CLAUDE.md` "Routing Discipline (v3.9.2)" + `shared/references/intent_clarification_protocol.md` for cross-skill routing rules. This skill assumes routing has already settled — ambiguous cross-phase materials should have been clarified upstream.
 
@@ -32,25 +32,25 @@ A lightweight orchestrator that manages the complete academic pipeline from rese
 5. **Reproducible** — Standardized workflow producing consistent quality assurance each time
 6. **Process documentation** — After pipeline completion, automatically generates a "Paper Creation Process Record" PDF documenting the human-AI collaboration history
 
-## Quick Start
+## 快速开始
 
-**Full workflow (from scratch):**
+**从零开始的完整流程：**
 ```
-I want to write a research paper on the impact of AI on higher education quality assurance
+我想从零开始完成一篇关于生成式 AI 对大学生学习投入影响的本科毕业论文
 ```
---> academic-pipeline launches, starting from Stage 1 (RESEARCH)
+--> academic-pipeline 启动，从 Stage 1（RESEARCH）开始
 
-**Mid-entry (existing paper):**
+**已有初稿时进入：**
 ```
-I already have a paper, help me review it
+我已经有论文初稿，请帮我做盲审前检查和修改规划
 ```
---> academic-pipeline detects mid-entry, starting from Stage 2.5 (INTEGRITY)
+--> academic-pipeline 从 Stage 2.5（INTEGRITY）附近进入
 
-**Revision mode (received reviewer feedback):**
+**收到导师/评审意见后进入：**
 ```
-I received reviewer comments, help me revise
+我收到了导师修改意见，请帮我修订论文
 ```
---> academic-pipeline detects, starting from Stage 4 (REVISE)
+--> academic-pipeline 从 Stage 4（REVISE）进入
 
 **Resume from passport (cross-session context reset, opt-in):**
 ```
@@ -77,6 +77,8 @@ resume_from_passport=<hash> [stage=<n>] [mode=<m>]
 ### Trigger Keywords
 
 **English**: academic pipeline, research to paper, full paper workflow, paper pipeline, end-to-end paper, research-to-publication, complete paper workflow
+
+**简体中文**: 完整论文流程, 从选题到终稿, 毕业论文全流程, 学位论文流程, 论文 pipeline, 研究到论文, 开题到答辩, 论文全流程
 
 ### Non-Trigger Scenarios
 

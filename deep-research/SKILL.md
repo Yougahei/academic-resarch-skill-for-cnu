@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: "Universal deep research agent team. 13-agent pipeline for rigorous academic research on any topic. 7 modes: full research, quick brief, paper review, lit-review, fact-check, Socratic guided research dialogue, and systematic review with optional meta-analysis. Covers research question formulation, Socratic mentoring, methodology design, systematic literature search, source verification, cross-source synthesis, risk of bias assessment, meta-analysis, APA 7.0 report compilation, editorial review, devil's advocate challenges, ethics review, and post-research literature monitoring. Triggers on: research, deep research, literature review, systematic review, meta-analysis, PRISMA, evidence synthesis, fact-check, guide my research, help me think through, 研究, 深度研究, 文獻回顧, 文獻探討, 系統性回顧, 後設分析, 事實查核, 引導我的研究, 幫我釐清, 幫我想想, 我不確定要研究什麼, 研究方向, 研究主題."
+description: "面向中国高校论文选题、开题和文献综述的 deep research agent team。13-agent 流水线支持 full、quick、review、lit-review、fact-check、socratic、systematic-review 等模式，覆盖研究问题澄清、研究设计、文献检索、来源核验、证据综合、偏倚评估、系统综述和研究报告。触发：研究、深度研究、文献综述、开题、研究方向、研究问题、系统综述、事实核查、引导我的研究、帮我梳理选题、我不确定要研究什么。"
 metadata:
   version: "2.9.4"
   last_updated: "2026-05-18"
@@ -12,9 +12,9 @@ metadata:
     - academic-pipeline
 ---
 
-# Deep Research — Universal Academic Research Agent Team
+# Deep Research — 中国高校论文研究与文献综述 Agent Team
 
-Universal deep research tool — a domain-agnostic 13-agent team for rigorous academic research on any topic.
+面向论文选题、开题、文献综述和研究设计的通用研究工具。它保留原版 13-agent 架构，同时更适合中国高校论文前期工作：把模糊兴趣收敛为研究问题，把文献材料整理成可写作的证据结构。
 
 **v2.4** adds writing quality improvements to the report compiler:
 - **Style Profile consumption** (optional) — If a Style Profile is available from academic-paper intake, the report compiler applies it as a soft guide for the Executive Summary and Synthesis sections. Discipline conventions and report objectivity take priority.
@@ -22,27 +22,27 @@ Universal deep research tool — a domain-agnostic 13-agent team for rigorous ac
 
 > **Routing discipline (v3.9.2):** see `.claude/CLAUDE.md` "Routing Discipline (v3.9.2)" + `shared/references/intent_clarification_protocol.md` for cross-skill routing rules. This skill assumes routing has already settled — ambiguous cross-phase materials should have been clarified upstream.
 
-## Quick Start
+## 快速开始
 
-**Minimal command:**
+**最小触发示例：**
 ```
-Research the impact of AI on higher education quality assurance
-```
-
-**Socratic mode:**
-```
-Guide my research on the impact of declining birth rates on private universities
-引導我的研究：少子化對私立大學的影響
-幫我釐清我的研究方向，我對高教品保有興趣但還不太確定
+研究生成式 AI 对高校学生学习成效的影响
 ```
 
-**Execution:**
-1. Scoping — Research question + methodology blueprint
-2. Investigation — Systematic literature search + source verification
-3. Analysis — Cross-source synthesis + bias check
-4. Composition — Full APA 7.0 report
-5. Review — Editorial + ethics + vulnerability scan
-6. Revision — Final polished report
+**苏格拉底式引导：**
+```
+请引导我梳理研究方向：生成式 AI 对大学生学习投入的影响
+帮我梳理选题，我对高教数字化转型感兴趣但还不确定研究问题
+我准备写开题报告，请帮我明确研究对象、变量和方法
+```
+
+**执行流程：**
+1. 界定范围：研究问题、研究对象、变量和方法蓝图
+2. 文献检索：关键词、数据库、纳入排除标准和来源核验
+3. 证据分析：主题归纳、争议点、研究空白和偏倚检查
+4. 报告生成：形成可用于开题或论文写作的研究简报
+5. 复核：伦理、逻辑漏洞、证据强度和引用风险
+6. 修订：输出更清晰的研究方案或文献综述基础
 
 ---
 
@@ -51,6 +51,8 @@ Guide my research on the impact of declining birth rates on private universities
 ### Trigger Keywords
 
 **English**: research, deep research, literature review, systematic review, meta-analysis, PRISMA, evidence synthesis, fact-check, methodology, APA report, academic analysis, policy analysis, guide my research, help me think through, monitor this topic, set up alerts
+
+**简体中文**: 研究, 深度研究, 文献综述, 文献回顾, 开题, 开题报告, 研究方向, 研究主题, 研究问题, 系统综述, Meta 分析, 证据综合, 事实核查, 研究方法, 学术分析, 政策分析, 引导我的研究, 帮我梳理选题, 帮我厘清, 我不确定要研究什么, 监测这个主题
 
 **繁體中文**: 研究, 深度研究, 文獻回顧, 文獻探討, 系統性回顧, 後設分析, 證據綜整, 事實查核, 研究方法, 學術分析, 政策分析, 引導我的研究, 幫我釐清, 監測這個主題, 設定追蹤
 

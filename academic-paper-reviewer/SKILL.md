@@ -1,6 +1,6 @@
 ---
 name: academic-paper-reviewer
-description: "Multi-perspective academic paper review with dynamic reviewer personas. Simulates 5 independent reviewers (EIC + 3 peer reviewers + Devil's Advocate) with field-specific expertise. Supports full review, re-review (verification), quick assessment, methodology focus, Socratic guided, and calibration modes. Triggers on: review paper, peer review, manuscript review, referee report, review my paper, critique paper, simulate review, editorial review, calibrate reviewer, reviewer calibration, measure reviewer accuracy."
+description: "面向中国高校论文审阅与盲审前检查的多视角评审 skill。模拟 5 个独立评审角色（主编/导师视角 + 3 个同行评审 + Devil's Advocate），按学科动态配置评审重点。支持完整评审、修改后复审、快速评估、方法专项、引导式改进和校准模式。触发：评审论文、审阅论文、盲审前检查、导师视角、修改意见、同行评审、论文质量评估、review paper。"
 metadata:
   version: "1.10.0"
   last_updated: "2026-06-01"
@@ -12,9 +12,9 @@ metadata:
     - academic-pipeline
 ---
 
-# Academic Paper Reviewer v1.10.0 — Multi-Perspective Academic Paper Review Agent Team
+# Academic Paper Reviewer v1.10.0 — 中国高校论文多视角评审 Agent Team
 
-Simulates a complete international journal peer review process: automatically identifies the paper's field, dynamically configures 5 reviewers (Editor-in-Chief + 3 peer reviewers + Devil's Advocate) who review from four non-overlapping perspectives — methodology, domain expertise, cross-disciplinary viewpoints, and core argument challenges — ultimately producing a structured Editorial Decision and Revision Roadmap.
+模拟导师、同行评审和盲审前检查的综合评阅流程：自动识别论文领域，动态配置 5 个评审角色，从方法、学科内容、跨学科视角和核心论证挑战等角度提出问题，最终输出结构化评审意见和修订路线图。
 
 **v1.1 Improvements**:
 1. Added Devil's Advocate Reviewer — specifically challenges core arguments, detects logical fallacies, and identifies the strongest counter-arguments
@@ -25,18 +25,18 @@ Simulates a complete international journal peer review process: automatically id
 
 ---
 
-## Quick Start
+## 快速开始
 
-**Simplest command:**
+**最简单的触发方式：**
 ```
-Review this paper: [paste paper or provide file]
+请审阅这篇毕业论文：[粘贴论文或提供文件]
 ```
 
-**Output:**
-1. Automatically identifies the paper's field and methodology type
-2. Dynamically configures the specific identities and expertise of 5 reviewers
-3. 5 independent review reports (each from a different perspective)
-4. 1 Editorial Decision Letter + Revision Roadmap
+**输出：**
+1. 自动识别论文领域、方法类型和可能的学校论文场景
+2. 动态配置 5 个评审角色
+3. 输出多视角独立评审意见
+4. 汇总导师/主编式总评、修改优先级和修订路线图
 
 ---
 
@@ -45,6 +45,8 @@ Review this paper: [paste paper or provide file]
 ### Trigger Keywords
 
 **English**: review paper, peer review, manuscript review, referee report, review my paper, critique paper, simulate review, editorial review, calibrate reviewer, reviewer calibration, measure reviewer accuracy
+
+**简体中文**: 评审论文, 审阅论文, 帮我看论文, 盲审前检查, 导师视角, 同行评审, 修改意见, 论文质量评估, 方法评审, 帮我挑问题, 模拟盲审
 
 ### Non-Trigger Scenarios
 

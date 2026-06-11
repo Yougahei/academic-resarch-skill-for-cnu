@@ -1,6 +1,6 @@
 ---
 name: academic-paper
-description: "12-agent academic paper writing pipeline. 10 modes (full/plan/outline/revision/revision-coach/abstract/lit-review/format-convert/citation-check/disclosure). 6 paper types, 5 citation formats, bilingual abstracts, LaTeX/DOCX-via-Pandoc/PDF output. Style Calibration + Writing Quality Check + Anti-Patterns with IRON RULE markers. Triggers: write paper, academic paper, guide my paper, parse reviews, AI disclosure, 寫論文, 學術論文, 引導我寫論文, 審查意見."
+description: "面向中国高校论文写作的 12-agent 学术论文流水线。支持 full/plan/outline/revision/revision-coach/abstract/lit-review/format-convert/citation-check/disclosure 等 10 种模式，覆盖本科毕业论文、研究生学位论文、课程论文、文献综述、导师意见修改、中英双语摘要、引用检查和格式转换。保留原版 Style Calibration、Writing Quality Check 和学术诚信规则。触发：写论文、学术论文、毕业论文、学位论文、论文大纲、引导我写论文、导师意见、审稿意见、盲审意见、AI 使用声明。"
 metadata:
   version: "3.2.0"
   last_updated: "2026-06-01"
@@ -13,9 +13,9 @@ metadata:
     - academic-pipeline
 ---
 
-# Academic Paper — Academic Paper Writing Agent Team
+# Academic Paper — 中国高校论文写作 Agent Team
 
-A general-purpose academic paper writing tool — 12-agent pipeline covering all disciplines, with higher education domain as the default reference.
+面向中国高校论文写作的通用工具。它保留原版 12-agent 写作流水线，默认更关注本科毕业论文、研究生学位论文、课程论文、文献综述、开题后初稿、导师意见修改和终稿前检查。
 
 **v2.5** adds two writing quality features:
 - **Style Calibration** (intake Step 10, optional) — Provide 3+ past papers and the pipeline learns your writing voice (sentence rhythm, vocabulary preferences, citation integration style). Applied as a soft guide during drafting; discipline conventions always take priority. See `shared/style_calibration_protocol.md`.
@@ -23,26 +23,26 @@ A general-purpose academic paper writing tool — 12-agent pipeline covering all
 
 > **Routing discipline (v3.9.2):** see `.claude/CLAUDE.md` "Routing Discipline (v3.9.2)" + `shared/references/intent_clarification_protocol.md` for cross-skill routing rules. This skill assumes routing has already settled — ambiguous cross-phase materials should have been clarified upstream.
 
-## Quick Start
+## 快速开始
 
-**Minimal command:**
+**最小触发示例：**
 ```
-Write a paper on the impact of AI on higher education quality assurance
-```
-
-```
-Write a paper on the impact of declining birth rates on private university management strategies
+帮我写一篇关于生成式 AI 对大学生学习投入影响的本科毕业论文
 ```
 
-**Execution flow:**
-1. Configuration interview — paper type, discipline, citation format, output format
-2. Literature search — systematic search strategy, source screening
-3. Architecture design — paper structure, outline, word count allocation
-4. Argumentation construction — claim-evidence chains, logical flow
-5. Full-text drafting — section-by-section draft, register adjustment
-6. Citation compliance + bilingual abstract (parallel)
-7. Peer review — five-dimension scoring, revision suggestions
-8. Output formatting — LaTeX/DOCX (via Pandoc)/PDF/Markdown
+```
+请引导我规划一篇关于少子化背景下地方高校招生策略的论文
+```
+
+**执行流程：**
+1. 配置访谈：论文类型、学科、学校格式、引用格式、输出格式
+2. 文献策略：检索词、纳入排除标准、核心文献筛选
+3. 结构设计：章节结构、论证主线、字数分配
+4. 论证构建：观点、证据、方法和结论之间的对应关系
+5. 正文草拟：按章节生成可审阅草稿
+6. 引用合规与中英摘要检查
+7. 模拟评阅：结构、论证、方法、引用、表达、格式
+8. 输出整理：Markdown、DOCX 转换建议、LaTeX/PDF 可选
 
 ---
 
@@ -51,6 +51,8 @@ Write a paper on the impact of declining birth rates on private university manag
 ### Trigger Keywords
 
 **English**: write paper, academic paper, paper outline, write abstract, revise paper, literature review paper, check citations, convert to LaTeX, convert format, format paper, conference paper, journal article, thesis chapter, research paper, guide my paper, help me plan my paper, step by step paper, draft manuscript, write methodology, write discussion, parse reviews, revision roadmap, help me with my revision, I got reviewer comments, convert citations
+
+**简体中文**: 写论文, 学术论文, 毕业论文, 学位论文, 课程论文, 论文大纲, 写摘要, 修改论文, 文献综述, 检查引用, 转 LaTeX, 转 DOCX, 转换格式, 期刊论文, 研究论文, 引导我写论文, 帮我规划论文, 逐步写论文, 写方法论, 写讨论, 导师意见, 审稿意见, 盲审意见, 修订路线图, 帮我修改, 我收到修改意见, 转换引用格式
 
 **繁體中文**: 寫論文, 學術論文, 論文大綱, 寫摘要, 修改論文, 文獻回顧論文, 檢查引用, 轉 LaTeX, 轉換格式, 研討會論文, 期刊文章, 學位論文, 研究論文, 引導我寫論文, 幫我規劃論文, 逐步寫論文, 寫方法論, 寫討論, 審查意見, 修訂路線圖, 幫我修改, 我收到審查意見, 轉換引用格式
 

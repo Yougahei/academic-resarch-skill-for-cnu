@@ -1,74 +1,58 @@
-# Mode Registry
+# 模式注册表
 
-Single source of truth for all modes across the ARS suite. **25 modes** across 4 skills.
+本文件是四个 skills 的模式索引。内部模式名保持英文，以便继续兼容原版逻辑、测试和上游合并；说明改为中文，方便中国高校论文场景使用。
 
-When adding or modifying modes, update this file first — SKILL.md files and CLAUDE.md should reference this registry.
+## deep-research
 
-Last updated: v3.12.0 (2026-06-08)
+| Mode | 用途 | 典型触发 |
+|---|---|---|
+| `full` | 完整研究报告 | 深度研究某主题、做学术分析 |
+| `quick` | 快速研究简报 | 快速了解某主题、30 分钟综述 |
+| `review` | 研究质量评阅 | 评估一篇论文或资料 |
+| `lit-review` | 文献综述 | 做文献回顾、整理研究脉络 |
+| `fact-check` | 事实核查 | 核验主张、数据、引用 |
+| `socratic` | 苏格拉底式选题辅导 | 研究方向不清楚、需要引导 |
+| `systematic-review` | 系统综述 | PRISMA、系统性回顾、Meta 分析 |
 
----
+## academic-paper
 
-## deep-research (7 modes)
+| Mode | 用途 | 典型触发 |
+|---|---|---|
+| `full` | 完整论文草拟 | 写论文、写研究论文 |
+| `plan` | 论文结构规划 | 引导我写论文、帮我规划章节 |
+| `outline-only` | 只生成大纲 | 论文大纲、章节安排 |
+| `revision` | 根据意见修改 | 导师意见、评审意见、返修 |
+| `revision-coach` | 修订路线规划 | 拆解审稿意见、生成回应框架 |
+| `abstract-only` | 摘要与关键词 | 中文摘要、英文摘要、中英双语摘要 |
+| `lit-review` | 文献综述型论文 | 写文献综述论文 |
+| `format-convert` | 格式转换 | 转 LaTeX、转 DOCX、改引用格式 |
+| `citation-check` | 引用检查 | 检查参考文献、核验引用 |
+| `disclosure` | AI 使用声明 | 生成 AI 辅助写作声明 |
 
-| Mode | Spectrum | Output | Oversight | Triggers |
-|------|----------|--------|-----------|----------|
-| `full` | Balanced | APA 7.0 report, 3,000-8,000 words | High | "research [topic]", "deep research", "academic analysis" |
-| `quick` | Fidelity | Research brief, 500-1,500 words | Medium | "quick brief", "30 minute summary", "quick research" |
-| `review` | Balanced | Reviewer report on provided text | High | "review this paper", "evaluate this paper", "assess this source" |
-| `lit-review` | Fidelity | Annotated bibliography + synthesis | Medium | "literature review", "annotated bibliography" |
-| `fact-check` | Fidelity | Claim-by-claim verification report | Medium | "verify claims", "fact-check", "evidence verification" |
-| `socratic` | Originality | Research Plan Summary + INSIGHT collection | Very High | "guide my research", "help me think through", "I'm not sure what to research" |
-| `systematic-review` | Fidelity | PRISMA 2020 report, 5,000-15,000 words | Medium | "systematic review", "meta-analysis", "PRISMA" |
+## academic-paper-reviewer
 
-## academic-paper (10 modes)
+| Mode | 用途 | 典型触发 |
+|---|---|---|
+| `full` | 完整多视角评审 | 评审论文、盲审前检查 |
+| `re-review` | 修改后复审 | 检查修改是否回应意见 |
+| `quick` | 快速质量评估 | 快速看一下问题 |
+| `methodology-focus` | 方法专项评审 | 只看方法、统计、研究设计 |
+| `guided` | 引导式改进 | 带我逐项改论文 |
+| `calibration` | 评审器校准 | 用金标准样本测评审准确性 |
 
-| Mode | Spectrum | Output | Oversight | Triggers |
-|------|----------|--------|-----------|----------|
-| `full` | Balanced | Complete paper draft (IMRaD or domain-appropriate) | High | "write a paper", "academic paper", "research paper" |
-| `plan` | Originality | Chapter Plan + INSIGHT collection (Socratic) | Very High | "guide my paper", "help me plan", "step by step paper" |
-| `outline-only` | Balanced | Detailed outline + evidence map | High | "paper outline", "just need an outline" |
-| `revision` | Fidelity | Revised draft + point-by-point R&R responses | High | "revise paper", "incorporate reviewer feedback" |
-| `revision-coach` | Balanced | Revision Roadmap + Response Letter Skeleton | Medium | "parse reviews", "I got reviewer comments" |
-| `abstract-only` | Fidelity | Bilingual abstract (zh-TW + EN) + keywords | Medium | "write abstract" |
-| `lit-review` | Fidelity | Annotated bibliography in paper format | Medium | "literature review paper", "write a lit review" |
-| `format-convert` | Fidelity | Formatted document (LaTeX/DOCX-via-Pandoc/PDF/MD) | Low | "convert to LaTeX", "convert citations to [format]" |
-| `citation-check` | Fidelity | Citation error report | Low | "check citations", "verify references" |
-| `disclosure` | Fidelity | Venue-specific AI-usage disclosure statement | Low | "AI disclosure for [venue]", "generate AI usage statement" |
+## academic-pipeline
 
-## academic-paper-reviewer (6 modes)
+| Mode | 用途 | 典型触发 |
+|---|---|---|
+| pipeline | 研究到终稿的完整流程 | 从选题到终稿、完整论文流程 |
+| `resume_from_passport=<hash>` | 从材料护照恢复流程 | 跨会话继续上次论文流程 |
 
-| Mode | Spectrum | Output | Oversight | Triggers |
-|------|----------|--------|-----------|----------|
-| `full` | Balanced | 5 review reports + Editorial Decision + Revision Roadmap | High | "review paper", "peer review", "manuscript review" |
-| `re-review` | Fidelity | Revision verification checklist + residual issues | Medium | "check revisions", "verification review" |
-| `quick` | Fidelity | EIC quick assessment + key issues list | Low | "quick review", "quick look" |
-| `methodology-focus` | Fidelity | In-depth methodology review | Medium | "check methodology", "focus on methods" |
-| `guided` | Originality | Socratic issue-by-issue dialogue | Very High | "guide me to improve", "walk me through issues" |
-| `calibration` | Fidelity | Calibration Report (FNR/FPR/AUC) + confidence disclosure | Medium | "calibrate reviewer", "measure reviewer accuracy" |
+## 中国高校推荐流程
 
-## academic-pipeline (1 orchestrator + 1 resume mode)
-
-| Mode | Spectrum | Output | Oversight | Triggers |
-|------|----------|--------|-----------|----------|
-| (pipeline) | Balanced | 10-stage orchestrated workflow | Very High | "academic pipeline", "research to paper", "full paper workflow" |
-| `resume_from_passport=<hash>` | Fidelity | Resume a prior pipeline run from a Material Passport reset boundary. Opt-in (`ARS_PASSPORT_RESET=1`). See `academic-pipeline/references/passport_as_reset_boundary.md`. | High | "resume from passport", "continue pipeline from reset boundary" |
-
----
-
-## Summary
-
-| Metric | Count |
-|--------|-------|
-| Total modes | 25 |
-| Fidelity | 14 (56%) |
-| Balanced | 7 (28%) |
-| Originality | 4 (16%) |
-
-### Oversight levels
-
-| Level | Meaning |
-|-------|---------|
-| Very High | User-led dialogue or mandatory checkpoints at every stage |
-| High | User confirms key decisions (RQ, outline, configuration) |
-| Medium | Structured format with limited decision points |
-| Low | Mechanical/template-driven, minimal human input |
+1. `deep-research/socratic`：明确题目、研究对象、变量和方法。
+2. `deep-research/lit-review`：形成文献矩阵和研究空白。
+3. `academic-paper/plan`：确定论文结构和章节任务。
+4. `academic-paper/full`：生成可审阅初稿。
+5. `academic-paper-reviewer/full`：模拟导师/评审意见。
+6. `academic-paper/revision`：根据意见修改。
+7. `academic-pipeline`：做终稿前一致性、引用和完整性检查。

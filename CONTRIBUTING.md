@@ -1,110 +1,52 @@
-# Contributing to Academic Research Skills
+# 贡献说明
 
-Thank you for your interest in contributing. This document explains what kinds of contributions we accept and how to submit them.
+`acdemic-resarch-skill-for-CNU` 是基于 `Imbad0202/academic-research-skills` 的中国高校论文场景二开版。贡献时请尽量保持核心源码、agent 协议和测试结构与上游一致，把本 fork 的差异集中在中文文档、学校规范适配、模板和本土化流程上。
 
----
+## 优先欢迎的贡献
 
-## How to submit a contribution
+- 中国高校论文格式规范整理
+- GB/T 7714 引用格式检查与示例
+- 本科毕业论文、硕士论文、博士论文模板适配
+- 开题报告、任务书、中期检查、答辩稿等过程材料模板
+- 中文学术写作表达和术语统一指南
+- 面向导师意见、盲审意见的修订流程样例
+- 原 README、教程、示例的中文化改写
 
-ARS uses the standard **fork-and-PR** workflow. Fork the repo on GitHub, clone your fork, create a branch, make your changes, push to your fork, then open a PR against `Imbad0202/academic-research-skills`.
+## 修改边界
 
-**Important**: You cannot push directly to this repo — you must fork it first and submit a PR from your fork.
+可以直接改：
 
----
+- `README.md`
+- `QUICKSTART.md`
+- `docs/SETUP.md`
+- 示例、模板和面向用户的中文教程
+- 与中国高校格式规范相关的 reference 文件
 
-## What we accept
+需要谨慎改：
 
-### Community-maintained (fast merge)
+- `*/SKILL.md`
+- `*/agents/*.md`
+- `shared/`
+- `scripts/`
+- `evals/`
+- `tests/`
 
-These contributions can be merged quickly with minimal review:
+这些文件影响运行行为。修改前建议先说明动机，并尽量保持与上游结构可合并。
 
-- **Typo and formatting fixes** — spelling, broken links, markdown rendering issues
-- **New examples** — pipeline output showcases, worked examples for specific disciplines
-- **Translation improvements** — better zh-TW or EN phrasing in READMEs or agent definitions
+## 分支与提交建议
 
-### Requires maintainer review
+```bash
+git checkout -b docs/cn-university-adaptation
+git add .
+git commit -m "docs: localize project for Chinese university paper workflows"
+```
 
-These need careful review because they affect system behavior:
+提交信息建议说明“改了什么”和“为什么改”，避免把文档翻译、行为修改和测试调整混在一个提交里。
 
-- **Journal and field reference lists** — additions to `top_journals_by_field.md`, new discipline glossaries
-- **Evaluation sets** — gold-standard papers for calibration mode, benchmark data
-- **New reference files** — methodology guides, citation format references, domain-specific protocols
-- **Bug and drift fixes** — version inconsistencies, broken cross-references, incorrect metadata
-- **Mode changes** — new modes, trigger keyword changes, oversight level adjustments
+## 学术诚信原则
 
-### Requires maintainer approval + discussion
+本项目服务论文写作流程，但不鼓励也不支持代写、伪造数据、伪造引用、规避查重或规避 AI 检测。所有功能都应保持“人主导、AI 协作、过程可解释、材料可追溯”的边界。
 
-Open an issue first before submitting a PR for these:
+## 许可
 
-- **Agent definition changes** — modifications to any file in `*/agents/*.md`
-- **IRON RULE modifications** — any change to rules marked with the IRON RULE marker
-- **Ethics and integrity rules** — changes to the failure mode checklist, integrity protocols, or ethics review
-- **Handoff schema changes** — modifications to `shared/handoff_schemas.md`
-- **New skills or modes** — additions to the pipeline
-
-### Platform ports (community-maintained only)
-
-This repository is the reference distribution of ARS, built for Claude Code. Ports to other agent platforms (Opencode, Cursor, Continue, Aider, etc.) are accepted as community-maintained contributions. Two structural shapes are acceptable — both keep core ARS content as the source of truth:
-
-- **In-tree wrapper.** Add a top-level `<platform>/` directory in this repo (e.g. `opencode/`) containing the manifest, plugin entry, and dispatch shims. Core ARS files (`skills/*/SKILL.md`, `agents/*.md`, `shared/`, `scripts/`) remain unmodified.
-- **Sibling distribution.** A separate repository that vendors ARS workflow content with: (1) upstream commit hash pinned (e.g. in a `manifest.json`); (2) a written update / sync policy; (3) vendored content unmodified — only the outer routing / adapter layer is platform-specific.
-
-Either shape is accepted under the same maintainer-facing conditions:
-
-- **Named maintainer.** The PR description (in-tree) or repo README (sibling) must identify who will keep the port in sync with ARS minor releases (~6-week cadence) and triage platform-specific bug reports. Platform-specific issues will be redirected to that maintainer.
-- **End-to-end evidence.** Include at least one full `academic-pipeline` run on the target platform, committed under `examples/<platform>/` (in-tree) or under an `examples/` path in the sibling repo, so regressions are detectable.
-- **Model-portability note.** ARS prompts are calibrated against Claude (Opus for architecture/review, Sonnet for execution; never Haiku). The PR must document which providers/models were tested and where downstream-agent behavior diverged from the Claude baseline.
-- **Open a design issue first** before submitting the PR (for in-tree) or before requesting sibling-distribution recognition in this repo's README.
-
----
-
-## PR guidelines
-
-- **One concern per PR** — don't mix unrelated changes
-- **Describe what and why** — explain the motivation, not just the change
-- **Reference issues** — if your PR addresses an open issue, link it
-- **Test your changes** — if you're modifying agent definitions, try running the skill to confirm it works as expected
-- **Keep READMEs in sync** — if your change affects user-facing documentation, update `README.md`, `README.zh-CN.md`, `README.zh-TW.md`, and `README.ja-JP.md` when applicable
-
----
-
-## Governance
-
-### Maintainer
-
-The repo is maintained by [Cheng-I Wu](https://github.com/Imbad0202) (HEEACT). The maintainer has final say on all merges.
-
-### Decision principles
-
-1. **Accuracy over completeness** — we'd rather have fewer, verified journal entries than a long unvetted list
-2. **Human-in-the-loop always** — contributions that reduce human oversight or enable fully autonomous paper generation will be declined
-3. **No detection evasion** — features designed to make AI-generated text harder to detect (as opposed to higher quality) are out of scope. See [Issue #3](https://github.com/Imbad0202/academic-research-skills/issues/3) for context.
-4. **Discipline diversity welcome** — ARS defaults to higher education research but aims to be domain-agnostic. Discipline-specific modules are encouraged.
-
----
-
-## Release checklist
-
-Most release mechanics are CI-enforced (`check_version_consistency.py` keeps CLAUDE.md / SKILL.md / CHANGELOG / plugin manifests / README badge in lockstep; the release-cooldown workflow paces tags). One convention is editorial and lives here:
-
-### `Real-use findings` subsection (#395)
-
-When drafting a release's CHANGELOG entry, include a **`Real-use findings`** subsection if any of the release's issues were discovered through actual use of the suite on a real paper — one line per issue, naming the run that surfaced it. Paper-derived / external-motivation work (the Zhao / Kong / Kim tracks) does NOT belong here; the subsection exists precisely to make the other provenance class visible. Background: the v3.6.7 production chapter run surfaced 17 drift patterns, but that lived-experience provenance was buried in spec prose with no fixed, greppable home — and release motivation since v3.8 has been almost entirely external papers, which is itself a signal worth seeing per release. If a release has no real-use findings, omit the subsection; never pad it.
-
-## Academic integrity policy
-
-This repo is designed to be **assistive, not deceptive**. See [POSITIONING.md](POSITIONING.md) for the full design philosophy. Contributors must not add features designed to evade AI detection tools. If unsure, open an issue to discuss before submitting a PR.
-
----
-
-## Credit
-
-Contributors are credited in commit messages, CHANGELOG entries, and the Contributors section of the README. For significant contributions (new features, major reference files), we also add a mention in the relevant release notes.
-
-## License
-
-By contributing, you agree that your contributions will be licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). See [POSITIONING.md](POSITIONING.md) for usage terms.
-
-## When adding a new skill
-
-Read [`shared/ground_truth_isolation_pattern.md`](shared/ground_truth_isolation_pattern.md) before writing the SKILL.md. It explains the three-layer model behind the `data_access_level` and `task_type` frontmatter fields and lists the do/don't rules for handling evaluation rubrics, gold labels, and answer keys.
+本 fork 继承原项目的 CC BY-NC 4.0 许可。贡献即表示你同意贡献内容按同一许可发布。

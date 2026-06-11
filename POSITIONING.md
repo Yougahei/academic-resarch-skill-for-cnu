@@ -1,79 +1,62 @@
-# Positioning
+# 项目定位
 
-## What this is
+`acdemic-resarch-skill-for-CNU` 是面向中国高校论文流程的学术研究协作 skills 套件。它基于原版 Academic Research Skills，保留“人主导、AI 协作、过程可追溯、引用可核验”的核心边界。
 
-Academic Research Skills (ARS) is a **source-available academic research copilot framework** for noncommercial scholarly use. The reference distribution is a suite of Claude Code skills that assists human researchers through the full research-to-publication pipeline. Sibling distributions for other agent platforms ([e.g. Codex](https://github.com/Imbad0202/academic-research-skills-codex)) follow the same workflow content, the same human-in-the-loop design philosophy, and the same license terms; see [CONTRIBUTING.md § Platform ports](CONTRIBUTING.md#platform-ports-community-maintained-only).
+## 它是什么
 
-It is licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). This is not an open source license — it restricts commercial use by design, to keep the tool free for academic communities.
+它是一个论文研究与写作 copilot，帮助研究者完成：
 
-## What this is not
+- 研究问题澄清
+- 文献检索与证据整理
+- 论文结构规划
+- 初稿与章节草拟
+- 中文学术表达润色
+- 引用和参考文献检查
+- 导师意见、评审意见、盲审意见拆解
+- 终稿前完整性与格式检查
 
-ARS is not an autonomous paper-writing system. It is not a replacement for the researcher. It does not claim authorship, and its outputs are not submission-ready without human review.
+## 它不是什么
 
-## Rejected mechanisms (autonomous-research anti-patterns)
+它不是自动代写系统，不替代学生、研究生、教师或研究者的判断。它不会也不应当替你决定研究问题、伪造数据、编造引用、绕过学校规范或规避学术诚信审查。
 
-These are not "out of scope" footnotes. They are the load-bearing boundary that defines what ARS does NOT do, and would not do even if a future system made them feasible. Each is the kind of autonomous mechanism catalogued by Kong et al. (2026), *AI for Auto-Research: Roadmap & User Guide* (arXiv:2605.18661), and rejected against the human-led positioning above. The recorded review test for all five — "who controls the next research-state transition?" — lives in the [L1 design lesson](docs/design/2026-06-08-kong-255-l1-copilot-not-auto-research.md).
+## 中国高校场景边界
 
-- **End-to-end autonomous research pipeline** (Kong §7.4.8). A system that carries a project from question to manuscript without scholar confirmation at each state transition. Rejected: the scholar would become a reviewer of AI output, not the author. The pipeline's mandatory checkpoints exist precisely to prevent this.
-- **Idea-generation agent** (Kong §3.1). An agent that proposes research hypotheses or questions *for* the scholar. Rejected — and distinct from the shipped wording-pattern advisory (#257): ARS may flag surface-level wording / framing patterns in a scholar-supplied research question and ask a Socratic follow-up, but it must not propose, substitute, rank, expand, or select research hypotheses or questions for the scholar. The boundary is recorded in the [L2 design lesson](docs/design/2026-06-08-kong-255-l2-advisory-not-generation.md).
-- **Paper2X auto-generation** (Kong §6). Autonomous generation of slides / posters / video from a manuscript. Rejected — and distinct from a *fidelity audit*: ARS may audit an already-authored or externally generated dissemination artifact against the manuscript for fidelity, but it must not transform a manuscript into a dissemination artifact by choosing the content, narrative, layout, or output medium itself. (Dissemination *design* is handled by separate, non-ARS skill chains; the fidelity-audit suggestion itself is out of this repo's scope.)
-- **Autonomous experiment execution / coding** (Kong §3.3). An LLM that runs experiments or code without scholar oversight. Rejected — and distinct from the shipped Experiment Provenance Intake (#260): ARS may ingest scholar-declared external experiment provenance and check manuscript claims against the declared results, but it must not initiate, run, modify, iterate, or treat tool-executed experiment / code outputs as evidence inside the pipeline.
-- **Physical wet-lab automation API** (Kong §7.4.6). An interface that drives liquid handlers or automated labs. Rejected: even with safeguards, this extends beyond a research copilot's scope into laboratory infrastructure, and conflicts with the copilot-not-pilot positioning.
+本 fork 可以适配学校论文规范，但学校/学院/导师的具体要求优先级最高。遇到冲突时，应以用户提供的正式文件为准，包括：
 
-These are first-party scope boundaries and review criteria for future changes, not runtime guarantees. First-party ARS treats each as out of scope; adding one would require changing this recorded boundary, not merely adding a feature.
+- 学校论文格式规范
+- 学院补充要求
+- 开题、中期、答辩流程文件
+- 导师明确反馈
+- 伦理审查和数据管理要求
 
-## Recorded non-goals (scope boundaries without a mechanism)
+## 允许用途
 
-Unlike the Rejected mechanisms above — capabilities ARS refuses on principle — these are lifecycle stages and state layers ARS deliberately does not enter. They were adjudicated out of scope in the 2026-06-10 researcher-blindspot audit and are recorded here so the boundary is reviewable, not improvised (the same recording discipline as the Rejected mechanisms; boundary + review criterion, not a runtime guarantee).
+- 非商业学术研究辅助
+- 论文写作训练和方法训练
+- 文献综述、研究设计、论证结构辅导
+- 参考文献和引用一致性检查
+- 教学中的论文规范示范
 
-- **Post-publication lifecycle.** Tracking citation contexts of the scholar's own published papers, errata/corrigenda workflows, and OA self-archiving compliance are out of scope. ARS's front is research-to-publication; what happens to a paper after it ships belongs to the scholar and their institutional tooling. The existing `monitoring_agent` is unaffected — it alerts on developments in the *cited* literature (an input to current work), not on the scholar's own published output. Review criterion: a proposed feature whose value begins *after* the manuscript is accepted extends the front, and requires changing this recorded boundary first.
-- **Research-program-level state.** ARS keeps no memory across papers: no registry of the scholar's prior claims, no carried-forward limitations list, no reviewer-history profile. The per-paper Material Passport remains the only state carrier, and every run starts from what the scholar explicitly feeds it. This is a deliberate consequence of the anti-leakage philosophy — gates that trusted an ambient cross-paper memory would be evaluating state nobody declared this run. The supported way for a returning author to carry their own prior work forward without any new mechanism is the [Cross-paper workflow guide](docs/cross-paper-workflow.md). Review criterion: a proposed feature that reads or writes scholar state outside the current run's passport crosses this boundary.
+## 不鼓励或禁止的用途
 
-## Allowed uses
+- 直接提交 AI 生成内容并声称完全由本人撰写
+- 伪造、篡改或包装不存在的数据和文献
+- 规避查重、规避 AI 检测或隐瞒 AI 使用
+- 商业代写、付费包装、托管 SaaS 或转售服务
 
-- Research assistance: literature search, source verification, citation checking
-- Teaching: demonstrating research methodology, peer review processes, academic writing standards
-- Method training: using Socratic modes to develop research question formulation and argumentation skills
-- Noncommercial academic collaboration: research groups, labs, departments using the tool for shared workflows
+## 设计原则
 
-## Discouraged uses
+1. **人主导**：关键研究决策必须由用户确认。
+2. **可追溯**：重要材料、引用、数据和修改依据都应留下来源。
+3. **可核验**：参考文献、事实主张和格式规范应尽量可检查。
+4. **可解释**：修改建议要说明原因，而不只是改写结果。
+5. **不欺骗**：提升写作质量，不服务于隐藏 AI 痕迹或学术不端。
 
-- Submitting AI-generated papers as solely human-authored without disclosing AI assistance
-- Using the tool to produce papers without engaging with the content (the pipeline has mandatory checkpoints specifically to prevent this)
-- Treating AI-generated review feedback as a substitute for actual peer review
+## 引用原项目
 
-## Prohibited uses (per license)
+本 fork 继承原项目 Academic Research Skills 的结构和许可。若在研究或教学中使用，请同时保留对原项目的引用：
 
-- Commercial SaaS or hosted services built on ARS
-- Consulting or freelance services that package ARS as a paid product
-- Enterprise or institutional paid deployments without separate licensing
-- Commercial API wrappers or resale of ARS functionality
-
-These reflect our policy intent. See the [CC BY-NC 4.0 license](https://creativecommons.org/licenses/by-nc/4.0/) for the precise legal terms. For commercial licensing inquiries, contact the maintainer.
-
-## Design philosophy
-
-**Assistive, not deceptive.** ARS helps you write better, not hide that you used AI.
-
-- Style Calibration learns your voice from past papers — so the output sounds like you, not like a machine
-- Writing Quality Check catches AI-typical patterns — to improve prose quality, not evade detection
-- Disclosure Mode generates venue-specific or policy-anchor AI usage statements — because transparency is the standard
-
-**Human-in-the-loop, always.** The pipeline's checkpoint system is mandatory by design:
-
-- FULL checkpoints present all deliverables and require explicit user confirmation
-- MANDATORY checkpoints at integrity gates and review decisions cannot be skipped
-- "Full mode" means full-pipeline execution, not full autonomy — the human decides at every gate
-- Max 2 revision loops, after which remaining issues become "Acknowledged Limitations" rather than being silently resolved
-
-**Failure modes are made visible, not hidden.** The 7-mode AI Research Failure Mode Checklist (v3.2) and Reviewer Calibration Mode exist so that users can see where the AI might be wrong — not so that the AI can claim it's always right. The v3.7.3 + v3.8 L3 claim-faithfulness gate adds per-citation locator anchors and an opt-in audit pass that verifies whether each cited source actually supports the claim made of it.
-
-**Boundaries are recorded, not improvised.** When adopting a capability from a published system would touch a load-bearing boundary — who ranks, what propagates, who writes state — the decision of whether and how to adopt it is written down as a design-lesson doc, so the same boundary is applied consistently later. The Co-Scientist (Gottweis et al. 2026) analysis is recorded in four such docs: hidden-ranking vs. advisory ranking ([L1](docs/design/2026-06-02-co-scientist-220-l1-hidden-ranking.md)), unapproved feedback propagation ([L2](docs/design/2026-06-02-co-scientist-221-l2-feedback-propagation.md)), which mechanisms transfer to ARS and which do not ([L3](docs/design/2026-06-02-co-scientist-222-l3-transfer-matrix.md)), and control-plane ownership — who may write, rank, or route ([L4](docs/design/2026-06-02-co-scientist-223-l4-control-plane-ownership.md)). The Kong (2026) auto-research analysis adds two: copilot vs. auto-research as a research-state-authority line ([L1](docs/design/2026-06-08-kong-255-l1-copilot-not-auto-research.md)) and advisory-on-wording vs. idea-generation ([L2](docs/design/2026-06-08-kong-255-l2-advisory-not-generation.md)); the autonomous mechanisms they reject are enumerated in [Rejected mechanisms](#rejected-mechanisms-autonomous-research-anti-patterns) above.
-
-## Citing this tool
-
-If you use ARS in your research, please cite it:
-
-```
-Wu, C.-I. (2026). Academic Research Skills for Claude Code (Version 3.8) [Computer software]. https://github.com/Imbad0202/academic-research-skills
+```text
+Wu, C.-I. (2026). Academic Research Skills for Claude Code [Computer software].
+https://github.com/Imbad0202/academic-research-skills
 ```

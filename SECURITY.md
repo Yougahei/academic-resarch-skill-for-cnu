@@ -1,36 +1,29 @@
-# Security Policy
+# 安全策略
 
-## Supported versions
+## 支持范围
 
-Only the latest release on the `main` branch receives security fixes.
+本 fork 主要维护当前 `main` 分支。历史版本不单独回溯修复。
 
-| Version | Supported |
-|---------|-----------|
-| Latest (`main`) | Yes |
-| Older releases | No |
+## 如何报告安全问题
 
-## Reporting a vulnerability
+如果你发现以下问题，请不要公开提交 issue：
 
-If you find a security issue (e.g. prompt injection, credential exposure, unintended data exfiltration through API calls), **do not open a public issue**.
+- Prompt injection 导致学术诚信门禁、引用检查或安全规则被绕过
+- API Key、论文材料、学生信息、访谈资料等敏感信息泄露
+- skill 把用户资料发送到未声明的外部服务
+- 完整性检查、引用核验、学术诚信流程被跳过
 
-Instead, use GitHub's **private vulnerability reporting**:
+请通过 GitHub 私密安全报告或私下联系维护者处理。
 
-1. Go to the [Security Advisories](https://github.com/Imbad0202/academic-research-skills/security/advisories) page.
-2. Click **"Report a vulnerability"**.
-3. Fill in the details — what you found, how to reproduce it, and the potential impact.
+## 中国高校场景的额外注意事项
 
-You will receive a response within 7 days. If the report is accepted, a fix will be issued and credited in the release notes. If declined, you will receive an explanation.
+使用本项目处理论文材料时，请特别注意：
 
-## Scope
+- 不要上传未脱敏的学生个人信息、访谈录音、问卷原始记录或敏感数据
+- 涉及人类受试者研究时，应遵守学校伦理审查要求
+- 导师意见、盲审意见、学院内部文件等材料应按学校要求处理
+- 不要把未公开数据交给不可信的外部模型或 API
 
-The following are in scope for security reports:
+## 非安全问题
 
-- **Prompt injection** — inputs that cause agents to bypass IRON RULE constraints, integrity gates, or ethics protocols
-- **Credential leakage** — configurations or agent behaviors that expose API keys (`ARS_CROSS_MODEL`, Semantic Scholar API key, etc.)
-- **Data exfiltration** — agent behaviors that send user research data to unintended external services
-- **Integrity gate bypass** — inputs that skip Stage 2.5 or Stage 4.5 blocking checks
-
-The following are **out of scope**:
-
-- AI output quality issues (hallucinations, weak arguments) — these are research limitations, not security vulnerabilities
-- Feature requests or general bugs — use [Issues](https://github.com/Imbad0202/academic-research-skills/issues) instead
+模型回答质量、论证薄弱、格式不完美、文献遗漏等属于普通 bug 或改进建议，请通过 issue 或 PR 处理。

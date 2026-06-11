@@ -1,15 +1,15 @@
 {
-  "name": "academic-research-skills",
+  "name": "acdemic-resarch-skill-for-CNU",
   "owner": {
-    "name": "Cheng-I Wu",
-    "url": "https://github.com/Imbad0202"
+    "name": "Yougahei",
+    "url": "https://github.com/Yougahei"
   },
-  "description": "Academic Research Skills — production-grade research, writing, peer review, and pipeline orchestration for Claude Code.",
+  "description": "面向中国高校论文服务的 Academic Research Skills 二开版，覆盖选题、文献综述、论文写作、评审修改、引用与格式检查。",
   "plugins": [
     {
-      "name": "academic-research-skills",
+      "name": "acdemic-resarch-skill-for-CNU",
       "source": "./",
-      "description": "4 skills + 35+ modes + Material Passport pipeline. Includes v3.6.7 cross-model audit gate and v3.6.8 generator-evaluator contract.",
+      "description": "4 个学术论文 skills + 完整流程编排，面向中国高校本科/研究生论文场景做中文化与规范适配。",
       "version": "3.12.0",
       "license": "CC-BY-NC-4.0"
     }
