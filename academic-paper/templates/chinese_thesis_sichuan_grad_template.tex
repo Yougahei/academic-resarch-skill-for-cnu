@@ -1,52 +1,144 @@
-\documentclass[UTF8,zihao=-4,scheme=chinese]{ctexbook}
+% Sichuan University Master/Doctoral Dissertation LaTeX Template
+% Source: 四川大学学位论文格式文件 (学位论文格式 (2).doc)
+% Compile with XeLaTeX.
 
-% Sichuan University Master/Doctoral Dissertation Pandoc template.
-% Compile with XeLaTeX. User-provided graduate school templates override
-% this fallback profile whenever available.
+\documentclass[UTF8,zihao=-4,linespread=1.0,twoside,scheme=chinese]{ctexbook}
 
-\usepackage[a4paper,left=3.0cm,right=2.5cm,top=2.8cm,bottom=2.5cm,headsep=0.8cm,footskip=1.0cm]{geometry}
-\usepackage{fontspec}
-\usepackage{xeCJK}
-\usepackage{setspace}
-\usepackage{indentfirst}
-\usepackage{fancyhdr}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{longtable}
-\usepackage{array}
-\usepackage{caption}
-\usepackage{amsmath}
-\usepackage{hyperref}
-\usepackage{xurl}
-\usepackage{titlesec}
-\usepackage{tocloft}
+% ===== Page Geometry =====
+% Spec: 16开纸 (184mm × 260mm)
+% Margins: reasonable defaults for 16开
+\usepackage[paperwidth=184mm,paperheight=260mm,
+  left=2.8cm, right=2.2cm,
+  top=2.5cm, bottom=2.5cm,
+  headheight=0.8cm, headsep=1.0cm,
+  footskip=0.79cm]{geometry}
 
+% ===== Fonts =====
+% Spec: 宋体(SimSun) body, 黑体(SimHei) headings, 楷体(KaiTi) names + level 4
+% macOS: Songti SC / Heiti SC / Kaiti SC
 \setmainfont{Times New Roman}
-\setCJKmainfont{FandolSong-Regular.otf}[BoldFont=FandolSong-Bold.otf,AutoFakeBold=2.0]
-\setCJKsansfont{FandolHei-Regular.otf}[BoldFont=FandolHei-Bold.otf,AutoFakeBold=2.0]
+\setCJKmainfont{Songti SC}[
+  BoldFont=Heiti SC,
+  ItalicFont=Kaiti SC,
+  BoldItalicFont=Heiti SC]
+\setCJKsansfont{Heiti SC}[BoldFont=Heiti SC]
+\setCJKmonofont{Kaiti SC}[BoldFont=Heiti SC]
 \setmonofont{Courier New}
 
+% ===== Line Spacing =====
+% Spec: fixed 20pt throughout
+\renewcommand{\normalsize}{\fontsize{12pt}{20pt}\selectfont}
+\usepackage{setspace}
+\setstretch{1.0}
+
+% ===== First-line Indent =====
+% Spec: 2 Chinese characters
+\usepackage{indentfirst}
 \setlength{\parindent}{2em}
-\setstretch{1.5}
-\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black,breaklinks=true}
 
-\pagestyle{fancy}
+% ===== Headers and Footers =====
+\usepackage{fancyhdr}
 \fancyhf{}
-\fancyhead[CE]{$if(title)$$title$$else$四川大学学位论文$endif$}
-\fancyhead[CO]{$if(author)$$author$$endif$}
-\fancyfoot[C]{\thepage}
+\fancyhead[LE]{\zihao{5} 四川大学$if(degree)$$degree$$else$学位$endif$论文}
+\fancyhead[RO]{\zihao{5} $if(title)$$title$$endif$}
+\fancyhead[RE]{\zihao{5} 四川大学$if(degree)$$degree$$else$学位$endif$论文}
+\fancyhead[LO]{\zihao{5} $if(title)$$title$$endif$}
+\fancyfoot[C]{\zihao{5}\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
 
-\titleformat{\chapter}[hang]{\centering\heiti\zihao{3}\bfseries}{第\thechapter 章}{1em}{}
-\titleformat{\section}{\heiti\zihao{4}\bfseries}{\thesection}{1em}{}
-\titleformat{\subsection}{\heiti\zihao{-4}\bfseries}{\thesubsection}{1em}{}
-\captionsetup{font=small,labelfont=bf,labelsep=quad}
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\zihao{5}\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
 
-\renewcommand{\contentsname}{目录}
+% ===== Heading Formatting =====
+% Spec:
+% Level 1 小三黑体(15pt) left-aligned
+% Level 2 四号黑体(14pt) left-aligned
+% Level 3 小四号黑体(12pt) left-aligned
+% Level 4 小四号楷体(12pt) left-aligned
+% No blank line between adjacent headings
+% One blank line between heading and previous paragraph
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]
+  {\heiti\zihao{-3}\bfseries\raggedright}
+  {第\thechapter 章}{1em}{}
+\titlespacing{\chapter}{0pt}{0pt}{0pt}
+
+\titleformat{\section}
+  {\heiti\zihao{4}\bfseries\raggedright}
+  {\thesection}{1em}{}
+\titlespacing{\section}{0pt}{0pt}{0pt}
+
+\titleformat{\subsection}
+  {\heiti\zihao{-4}\bfseries\raggedright}
+  {\thesubsection}{1em}{}
+\titlespacing{\subsection}{0pt}{0pt}{0pt}
+
+\titleformat{\subsubsection}
+  {\kaiti\zihao{-4}\bfseries\raggedright}
+  {\thesubsubsection}{1em}{}
+\titlespacing{\subsubsection}{0pt}{0pt}{0pt}
+
+% ===== Table of Contents =====
+\usepackage{tocloft}
+\renewcommand{\cfttoctitlefont}{\hfill\heiti\zihao{3}}
+\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\contentsname}{目\ \ 录}
+\renewcommand{\cftchapfont}{\zihao{-4}}
+\renewcommand{\cftsecfont}{\zihao{-4}}
+\renewcommand{\cftsubsecfont}{\zihao{-4}}
+\renewcommand{\cftchappagefont}{\zihao{-4}}
+\renewcommand{\cftsecpagefont}{\zihao{-4}}
+\renewcommand{\cftsubsecpagefont}{\zihao{-4}}
+\renewcommand{\cftbeforechapskip}{0pt}
+\renewcommand{\cftbeforesecskip}{0pt}
+\renewcommand{\cftbeforesubsecskip}{0pt}
+\renewcommand{\cftsecindent}{2em}
+\renewcommand{\cftsubsecindent}{4em}
+
+% ===== Captions =====
+% Spec: 五号黑体(10.5pt) bold, centered
+\usepackage{caption}
+\captionsetup{
+  font={bf,small},
+  labelfont={bf},
+  labelsep=quad,
+  justification=centering,
+  singlelinecheck=false}
+
+% ===== Three-line Tables =====
+\usepackage{booktabs}
+
+% ===== Figures and Graphics =====
+\usepackage{graphicx}
+\graphicspath{{figures/}{images/}{./}}
+
+% ===== Tables =====
+\usepackage{longtable}
+\usepackage{array}
+
+% ===== Mathematics =====
+\usepackage{amsmath}
+
+% ===== Hyperlinks =====
+\usepackage{hyperref}
+\usepackage{xurl}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black,
+  breaklinks=true}
+
+% ===== Labels =====
 \renewcommand{\bibname}{参考文献}
 \renewcommand{\figurename}{图}
 \renewcommand{\tablename}{表}
 
+% ===== Pandoc Compatibility =====
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \providecommand{\pandocbounded}[1]{#1}
 
@@ -60,53 +152,153 @@ $if(csl-refs)$
 \newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
 $endif$
 
+% ===== Commands =====
+\newcommand{\kaiti}{\CJKfamily{zhkai}}
+
 \begin{document}
 
-\frontmatter
+% ===== Title Page =====
+% Spec: 四川大学 + 博/硕士学位论文, title, author info
 \begin{titlepage}
 \centering
 \vspace*{1.6cm}
-{\heiti\zihao{2} 四川大学学位论文 \par}
-\vspace{1.4cm}
-{\heiti\zihao{2} $if(title)$$title$$else$论文题目$endif$ \par}
-\vspace{1.2cm}
-{\zihao{3} $if(subtitle)$$subtitle$$endif$ \par}
+{\heiti\zihao{1} 四川大学 \par}
+\vspace{1.0cm}
+{\heiti\zihao{2} $if(degree)$$degree$$else$学位$endif$论文 \par}
 \vfill
+{\heiti\zihao{3} $if(title)$$title$$else$论文题目$endif$ \par}
+\vspace{0.5cm}
+{\songti\zihao{3} $if(subtitle)$$subtitle$$endif$ \par}
+\vfill
+{\songti\zihao{4}
 \begin{tabular}{rl}
+题\ \ 目： & $if(title)$$title$$else$题目$endif$ \\
+作\ \ 者： & $if(author)$$author$$else$作者$endif$ \\
+完成日期： & $if(date)$$date$$else$\qquad 年 \qquad 月 \qquad 日$endif$ \\
+\\
 培养单位： & $if(college)$$college$$else$培养单位$endif$ \\
-学科专业： & $if(major)$$major$$else$学科专业$endif$ \\
-研究方向： & $if(research-direction)$$research-direction$$else$研究方向$endif$ \\
-研究生： & $if(author)$$author$$else$作者姓名$endif$ \\
 指导教师： & $if(advisor)$$advisor$$else$指导教师$endif$ \\
-完成日期： & $if(date)$$date$$else$\today$endif$ \\
+专\ \ 业： & $if(major)$$major$$else$专业$endif$ \\
+研究方向： & $if(research-direction)$$research-direction$$else$研究方向$endif$ \\
+授予学位日期： & $if(degree-date)$$degree-date$$else$\qquad 年 \qquad 月 \qquad 日$endif$ \\
 \end{tabular}
+\par}
 \end{titlepage}
 
+% ===== Front Matter =====
+\frontmatter
+\pagestyle{plain}
+
+% ===== Chinese Abstract =====
+% Spec: Title 小二号宋体(18pt), major 小四宋体(12pt),
+% "研究生""指导教师" 小四黑体, names 小四楷体
+% Body 小四宋体(12pt), "关键词" 小四黑体
+% Master's ~1000 chars, Doctoral ~3000 chars
 $if(abstract-zh)$
-\chapter*{摘要}
-\addcontentsline{toc}{chapter}{摘要}
+\cleardoublepage
+\vspace*{40pt}
+\begin{center}
+{\songti\zihao{-2} $if(title)$$title$$endif$ \par}
+\vspace{20pt}
+{\songti\zihao{-4} $if(major)$$major$$else$专业$endif$ \par}
+\vspace{20pt}
+{\heiti\zihao{-4} 研究生 \ \kaiti $if(author)$$author$$else$姓名$endif$ \quad
+ 指导教师 \ \kaiti $if(advisor)$$advisor$$else$姓名$endif$ \par}
+\end{center}
+\vspace{40pt}
 $abstract-zh$
 
-\noindent\textbf{关键词：}$if(keywords-zh)$$keywords-zh$$endif$
-\clearpage
+\vspace{20pt}
+\noindent{\heiti\zihao{-4} 关键词：}{\songti\zihao{-4} $if(keywords-zh)$$keywords-zh$$endif$}
 $endif$
 
+% ===== English Abstract =====
 $if(abstract-en)$
-\chapter*{Abstract}
-\addcontentsline{toc}{chapter}{Abstract}
+\cleardoublepage
+\vspace*{40pt}
+\begin{center}
+{\bfseries\zihao{-2} \MakeUppercase{$if(title-en)$$title-en$$else$$title$$endif$} \par}
+\vspace{20pt}
+{\zihao{-4} $if(major-en)$$major-en$$else$$major$$endif$ \par}
+\vspace{20pt}
+{\bfseries\zihao{-4} Graduate: $if(author)$$author$$endif$ \quad
+ Supervisor: $if(advisor)$$advisor$$endif$ \par}
+\end{center}
+\vspace{40pt}
 $abstract-en$
 
-\noindent\textbf{Keywords: }$if(keywords-en)$$keywords-en$$endif$
-\clearpage
+\vspace{20pt}
+\noindent{\bfseries Keywords: } $if(keywords-en)$$keywords-en$$endif$
 $endif$
 
+% ===== Table of Contents =====
+\cleardoublepage
+{
+\renewcommand{\baselinestretch}{1.25}
 \tableofcontents
+}
+
+% ===== Main Body =====
 \mainmatter
+\pagestyle{fancy}
 
 $body$
 
 $if(nocite-ids)$
 \nocite{$for(nocite-ids)$$it$$sep$, $endfor$}
+$endif$
+
+% ===== References =====
+% Spec: 五号宋体(10.5pt)
+$if(bibliography)$
+\clearpage
+{\zihao{5}
+$bibliography$
+}
+$endif$
+
+% ===== Research Achievements During Enrollment =====
+$if(achievements)$
+\clearpage
+\chapter*{作者在读期间科研成果简介}
+\addcontentsline{toc}{chapter}{作者在读期间科研成果简介}
+$achievements$
+$endif$
+
+% ===== Declaration and Authorization =====
+\clearpage
+\chapter*{声\ \ 明}
+\addcontentsline{toc}{chapter}{声明}
+本人声明所呈交的学位论文是本人在导师指导下进行的研究工作及取得的研究成果。据我所知，除了文中特别加以标注和致谢的地方外，论文中不包含其他人已经发表或撰写过的研究成果，也不包含为获得四川大学或其他教育机构的学位或证书而使用过的材料。与我一同工作的同志对本研究所做的任何贡献均已在论文中作了明确的说明并表示谢意。
+
+本学位论文成果是本人在四川大学读书期间在导师指导下取得的，论文成果归四川大学所有，特此声明。
+
+\vspace{20pt}
+\noindent 作者签名：\hspace{5em} \hfill 导师签名：\hspace{5em}
+
+\vspace{20pt}
+\noindent \hspace{8em} 年 \hspace{2em} 月 \hspace{2em} 日
+
+\vspace{40pt}
+\chapter*{学位论文使用授权书}
+\addcontentsline{toc}{chapter}{学位论文使用授权书}
+
+本学位论文作者完全了解四川大学有关保留、使用学位论文的规定，同意学校保留并向国家有关部门或相关机构送交论文的原件、复印件和电子版，允许论文被查阅和借阅。本人授权四川大学将本学位论文的全部或部分内容编入有关数据库进行信息技术服务，可以采用影印、缩印或扫描等复制手段保存、汇编学位论文，并用于学术活动。
+
+（涉密学位论文在解密后适用于本授权书）
+
+\vspace{20pt}
+\noindent 作者签名：\hspace{5em} \hfill 导师签名：\hspace{5em}
+
+\vspace{20pt}
+\noindent \hspace{8em} 年 \hspace{2em} 月 \hspace{2em} 日
+
+% ===== Acknowledgements =====
+$if(acknowledgements)$
+\clearpage
+\chapter*{致谢}
+\addcontentsline{toc}{chapter}{致谢}
+$acknowledgements$
 $endif$
 
 \end{document}

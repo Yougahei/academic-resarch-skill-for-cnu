@@ -219,72 +219,98 @@ Common binding pattern:
 
 ### Page Setup And Printing
 
-Known profile requirements:
+Source: `07.论文审查心得及注意事项.docx` §2.1
 
-- Paper: A4.
+- Paper: A4 (210 mm × 297 mm).
 - Margins: top 2.54 cm, bottom 2.54 cm, left 2.2 cm, right 2.2 cm.
+- Header distance from top: 2 cm.
+- Footer distance from bottom: 1.75 cm.
 - Overall line spacing: fixed 20 pt unless a specific element requires otherwise.
 - Cover, abstracts, and table of contents: single-sided printing.
 - Main text, references, appendices, and acknowledgements: double-sided printing.
-- Page number: centered in the footer.
+- Section break after cover (not page break via carriage returns).
+
+### Header And Footer
+
+Source: `07.论文审查心得及注意事项.docx` §2.2, §2.3
+
+- Header left: "广西大学本科毕业论文" or "广西大学本科毕业设计".
+- Header right: paper title.
+- Header font: 隶书 小四号 (12pt). If 隶书 unavailable, use 楷体 as substitute.
+- Header underline: 0.4 pt horizontal rule.
+- Header starts from main body Chapter 1.
+- Odd and even pages use the same header content.
+- Page number (front matter): Roman numerals (Ⅰ, Ⅱ, Ⅲ...), bottom center, Times New Roman 五号 (10.5pt).
+- Page number (main body): Arabic numerals (1, 2, 3...), bottom center, Times New Roman 五号 (10.5pt).
 
 ### Cover
 
-Common cover rules:
+Source: `07.论文审查心得及注意事项.docx` §3
 
-- Thesis/design title: 黑体 一号, centered.
-- Other cover information: 宋体 四号, centered.
-- Use the official Guangxi University cover when available; do not recreate seal, logo, or field layout from memory.
+- Thesis title: 黑体 一号 (26pt), centered.
+- Title max 25 characters; if split across two lines, second line left-aligned with first.
+- Other info (college, major, class, student ID, name, advisor): 宋体 四号 (14pt), centered.
+- Advisor name followed by two spaces then title (e.g., "教授").
+- College and major names use standard full names, not abbreviations.
+- Date: format "二〇二六年五月", uses "〇" not "0" or "O".
+- Section break after cover.
 
 ### Chinese Abstract
 
-Known profile requirements:
+Source: `07.论文审查心得及注意事项.docx` §4
 
-- Chinese title appears above the abstract when required by the template.
-- `摘要`: 黑体 三号, centered; the two Chinese characters may use spaced layout.
-- Abstract body: 宋体 小四, fixed 20 pt line spacing, first-line indent two Chinese characters.
-- Length: commonly at least 400 Chinese characters; review notes suggest roughly 400-600 Chinese characters.
-- Content: purpose, significance, methods, process, results, conclusion, and innovation where appropriate.
-- Avoid self-evaluation and unsupported claims.
-- `关键词`: label in 黑体 小四; keyword terms in 宋体 小四.
-- Keywords: usually 3-8 terms; 5 is a practical target when no stricter rule is given.
-- Separator: Chinese semicolon `；`; no final punctuation after the last keyword.
+- Chinese paper title above abstract: 黑体 三号 (16pt), centered, fixed 20 pt line spacing, one line space before/after.
+- "摘 要" (one space between characters): 黑体 三号 (16pt), centered, fixed 20 pt, one line space before/after.
+- One blank line below "摘要" before body text.
+- Abstract body: 宋体 小四 (12pt), fixed 20 pt line spacing, first-line indent two Chinese characters.
+- Length: 400–600 Chinese characters.
+- Content structure: purpose (~100 chars), methods (~200 chars), results (~200+ chars), conclusion (~100 chars).
+- Use third-person, objective tone; no first-person pronouns.
+- "关键词": 黑体 小四 (12pt), left-aligned with two-character indent, on same line as keywords.
+- Keywords: 宋体 小四 (12pt), 3–8 terms (recommended 5), separated by "；", no trailing punctuation.
+- Section break after Chinese abstract.
 
 ### English Abstract
 
-Known profile requirements:
+Source: `07.论文审查心得及注意事项.docx` §5
 
-- English abstract uses Times New Roman, corresponding in size to the Chinese abstract.
-- `ABSTRACT` and title formatting should follow the official template.
-- Body line spacing commonly follows fixed 20 pt.
-- `Keywords` use semicolon-separated terms.
-- No final punctuation after the last keyword when the template follows the Chinese keyword convention.
+- All English text: Times New Roman.
+- Paper title: ALL CAPS, 三号 (16pt), bold, centered.
+- "ABSTRACT": 三号 (16pt), bold, centered, one blank line above and below.
+- Body: Times New Roman 小四 (12pt), fixed 20 pt line spacing.
+- Each paragraph: four-character-space indent; minimum five-character-space margin on each side.
+- "KEYWORDS" (not "KEY WORDS", all caps, with "S"): bold, left-aligned, no indent.
+- Keywords: first letter capitalized, separated by ";", no trailing punctuation.
+- Section break after English abstract.
 
 ### Table Of Contents
 
-Known profile requirements:
+Source: `07.论文审查心得及注意事项.docx` §6
 
-- `目录`: 黑体 三号, centered; review notes show spaced-character layout may be expected.
-- Contents: 宋体 小四.
-- The table of contents generally reaches second-level headings, unless the template requires deeper levels.
-- Chinese and English abstracts should appear in the table of contents when required.
-- Abstract pages use Roman numerals; main text uses Arabic numerals.
-- Second-level entries may indent two Chinese spaces; third-level entries may indent four Chinese spaces.
-- Common line spacing: 1.25 lines in some review notes.
+- "目 录" (one space between characters): 黑体 三号 (16pt), centered.
+- Content: 小四号 (12pt), 1.25× line spacing.
+- Secondary headings indent 2 Chinese characters; tertiary headings indent 4 characters.
+- Page numbers right-aligned.
+- Abstract pages: Roman numeral page numbers. Main body: Arabic page numbers.
+- TOC lists to second-level headings by default; third-level only for substantial results.
+- TOC first page should be odd-numbered (right-hand page after binding).
 
 ### Main Text
 
-Known profile requirements:
+Source: `07.论文审查心得及注意事项.docx` §7
 
-- Main text length: at least 10,000 Chinese characters/words; some review notes recommend about 12,000.
-- Common structure: introduction or preface, method or design argumentation, process, result analysis, conclusion or summary.
-- First chapter is often expected to be `绪论`.
-- Results and analysis should be substantial; review notes expect them to be the majority of the body for some thesis/design types.
-- Each chapter may start on a new page or right-side page depending on template/printing setup.
+- Body: 宋体 小四 (12pt); English/Times New Roman 小四 (12pt).
+- Line spacing: fixed 20 pt throughout.
+- First-line indent: two Chinese characters.
+- Minimum length: 10,000 Chinese characters (recommended 12,000+).
+- Results and analysis section should be ≥ 65% of total word count.
+- Each chapter starts on a new page (preferably right-hand).
+- If a chapter end leaves > 1/3 blank page, insert two blank lines before next chapter instead of page break.
+- No automatic numbering — use manual heading numbers.
 
 ### Heading Hierarchy
 
-Known Guangxi profile styles:
+Source: `07.论文审查心得及注意事项.docx` §2.5
 
 ```text
 第一章 标题
@@ -293,55 +319,64 @@ Known Guangxi profile styles:
 1.1.1.1 标题
 ```
 
-Common formatting from review notes:
+| Level | Example | Font | Size | Alignment | Spacing |
+|-------|---------|------|------|-----------|---------|
+| 1 | `第一章 绪论` | 黑体 | 小二号 (18pt) | Centered | One blank line before/after |
+| 2 | `1.1 研究背景` | 黑体 | 小三号 (15pt) | Left-aligned | No extra space |
+| 3 | `1.1.1 国内研究现状` | 黑体 | 四号 (14pt) | Left-aligned | No extra space |
+| 4 | `1.1.1.1 ...` | 黑体 | 小四号 (12pt) | Left-aligned | No extra space |
+| Body | Body paragraph | 宋体 小四 | 12pt | Justified | Fixed 20 pt, first-line indent 2 chars |
 
-| Level | Example | Format |
-|-------|---------|--------|
-| 1 | `第一章 绪论` | 小二号黑体, centered; blank line before/after |
-| 2 | `1.1 研究背景` | 小三号黑体, left aligned |
-| 3 | `1.1.1 国内研究现状` | 四号黑体, left aligned |
-| 4 | `1.1.1.1 ...` | 小四号黑体, left aligned |
-| Body | Body paragraph | 宋体 小四; English Times New Roman 12 pt; fixed 20 pt; first-line indent two Chinese characters |
-
-Avoid using only one subsection under a heading level. Review notes prefer multiple peer subsections when a level is introduced.
+- No trailing punctuation after heading numbers (e.g., "1.1 标题" not "1.1. 标题").
+- A heading level must have ≥ 2 peer subheadings or merge into parent.
+- Prefer three-level heading structure; fourth level only for exceptional papers.
 
 ### Figures, Tables, And Equations
 
-Figures:
+Source: `07.论文审查心得及注意事项.docx` §8, §9, §10
 
-- Use computer-drawn or exported figures; avoid freehand drawings and casual screenshots.
-- Number by chapter, for example `图3-2`.
-- Figure title goes below the figure.
-- Figure title commonly uses 五号 bold; English titles may use Times New Roman bold and `Fig.`.
-- Do not split figure title and figure across pages.
-- Cite figures before placement.
+Figures:
+- Figure caption below figure, centered, 五号 (10.5pt) bold, fixed 20 pt line spacing.
+- English caption: "Fig." + Times New Roman bold (if bilingual).
+- One blank line before figure and after figure caption.
+- At least 1.5 lines of body text before any figure/table on a new page.
+- No text box captions; use inline embedded images.
+- Multiple images should be composited or placed in a borderless table.
+- Cite figure before placement; mark source at top-right of caption if applicable.
+- No watermarks, commercial marks, or trial version marks on figures.
 
 Tables:
-
-- Number by chapter, for example `表5-4`.
-- Table title goes above the table.
-- Use units, notes, and consistent decimal precision.
-- Three-line tables are commonly expected.
-- Keep table titles and tables together across page breaks when possible.
+- Table caption above table, centered, 五号 (10.5pt) bold, fixed 20 pt line spacing.
+- English caption: "Tab." + Times New Roman bold (if bilingual).
+- One blank line before table caption and after table.
+- Three-line table: 1.5 pt top/bottom rules, 0.5 pt header separator rule.
+- Table content: 五号 (10.5pt) 宋体.
+- No first-line indent in table cells.
+- On page break: repeat caption with "续表" suffix.
 
 Equations:
-
-- Display equations on separate centered lines.
-- Number by chapter, for example `(2-3)`, placed at the right end.
-- Explain parameters and units after the equation when needed.
+- Created with equation editor; do not copy-paste from references.
+- Equation number at right margin on same line.
+- Parameter annotations below equation, either hanging-indent or single-paragraph format.
+- Cite equation before placement.
+- Use Greek letters or Times New Roman for equation text; no Chinese characters inside equations.
 
 ### References
 
-Known profile checks:
+Source: `07.论文审查心得及注意事项.docx` §11
 
-- Use in-text upper-right numeric references such as `[序号]` when required by the template.
-- Include foreign-language literature when required by the college.
-- Design work may require at least two English papers.
-- Some thesis review notes expect 13 or more English papers for research theses.
-- Prefer recent references from the last 3-5 years unless a source is foundational.
-- Ensure all listed references are cited in the text and citation order matches the list when using numbered style.
-- Avoid casual, low-value, or uncited references.
-- Include complete author, title, journal/book, year, volume, issue, pages, DOI/URL, and other required metadata.
+- Minimum 40 references; ≥ 2/3 from the last 5 years.
+- Chinese-majority: English ≥ 1/3. English-majority: Chinese ≥ 1/5.
+- Prefer journal articles over patents, books, conference papers, web articles.
+- Format: 著者. 题名[J]. 期刊名称, 出版年, 卷号(期号): 起止页码.
+- Dissertation format: 作者. 篇名[D]. 学校所在城市: 学校名称, 出版年份.
+- Authors ≤ 3: list all. Authors > 3: list first 3 + "，等" (Chinese) or ", et al" (English).
+- Chinese and foreign authors: surname first, given name abbreviated.
+- Volume number required; issue number optional if absent.
+- Page numbers required; use "-" for ranges, "," for separate ranges.
+- Each reference ends with ".".
+- In-text citation numbers before punctuation (e.g., "[9]。" not "。[9]").
+- Warn: AI-generated hallucinated references must be verified by the author.
 
 ### Review And Inspection Problem Checklist
 
@@ -387,41 +422,43 @@ The originality declaration and authorization statement require signatures accor
 
 ### Page Setup And Core Layout
 
-Known profile requirements:
+Source: `学位论文格式 (2).doc` §1
 
 - Prepared with Microsoft Word.
-- Paper size: 16 kai.
-- Main body: 小四宋体.
+- Paper size: 16 kai (184 mm × 260 mm). Note: A4 may substitute if 16 kai unavailable, but the official requirement is 16 kai.
+- Main body: 小四宋体 (12pt).
 - Line spacing: fixed 20 pt.
 - Body layout: about 34 Chinese characters per line.
-- References: 五号宋体.
+- Margins: left 2.8 cm, right 2.2 cm, top 2.5 cm, bottom 2.5 cm (estimated from 版心 requirements; adjust if official template provides exact values).
+- References: 五号宋体 (10.5pt).
 
 ### Abstracts
 
-Known profile requirements:
+Source: `学位论文格式 (2).doc` §2
 
-- Chinese abstract title: 小二宋体.
-- Major line: 小四宋体.
-- Graduate and advisor labels: 小四黑体.
-- Names: 小四楷体.
-- Abstract body: 小四宋体.
-- Keyword label: 小四黑体.
+- Chinese abstract title: 小二号宋体 (18pt).
+- Major line: 小四号宋体 (12pt).
+- "研究生" and "指导教师" labels: 小四号黑体 (12pt).
+- Graduate name and advisor name: 小四号楷体 (12pt).
+- Abstract body: 小四号宋体 (12pt).
+- "关键词" label: 小四号黑体 (12pt).
 - Master's abstract: about 1000 Chinese characters.
 - Doctoral abstract: about 3000 Chinese characters.
+- Vertical spacing: two blank lines above title, one line between title and major, one line between major and author info, two lines between author info and body.
 - Foreign-language abstract should correspond to the Chinese abstract.
 
 ### Heading Hierarchy
 
-Known profile requirements:
+Source: `学位论文格式 (2).doc` §1
 
-| Level | Format |
-|-------|--------|
-| Level 1 | 小三黑体, left aligned |
-| Level 2 | 四号黑体, left aligned |
-| Level 3 | 小四黑体, left aligned |
-| Level 4 | 小四楷体, left aligned |
+| Level | Font | Size | Alignment | Notes |
+|-------|------|------|-----------|-------|
+| Level 1 | 黑体 | 小三号 (15pt) | Left-aligned | — |
+| Level 2 | 黑体 | 四号 (14pt) | Left-aligned | — |
+| Level 3 | 黑体 | 小四号 (12pt) | Left-aligned | — |
+| Level 4 | 楷体 | 小四号 (12pt) | Left-aligned | Distinct from headings 1–3 |
 
-There should be no blank line between adjacent headings. There should be a blank line between a heading and the previous paragraph.
+No blank line between adjacent headings. One blank line between a heading and the previous paragraph. All headings left-aligned ("靠左边顶排").
 
 ### Figures And Tables
 
