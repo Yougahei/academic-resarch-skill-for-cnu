@@ -88,10 +88,10 @@ ln -s ~/acdemic-resarch-skill-for-CNU/academic-pipeline .claude/skills/academic-
 
 ## 5. 下一步二开建议
 
-如果要进一步服务中国高校论文，可以优先增加：
+如果要进一步服务中国高校论文，可以在当前格式 reference 基础上继续增加：
 
-- 学校论文模板解析
-- GB/T 7714 引用格式检查
+- 学校论文模板解析；默认格式参考见 [中国高校论文格式参考](academic-paper/references/chinese_higher_education_thesis_format.md)
+- GB/T 7714 引用格式检查；原版 APA 7 中文引用并不是大陆本科论文默认规范
 - 开题报告与任务书模板
 - 学院格式规范清单
 - 中文摘要、英文摘要和关键词规范

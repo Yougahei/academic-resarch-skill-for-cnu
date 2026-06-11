@@ -217,6 +217,41 @@ Ministry of Education (2024). Publication title. https://url
 
 ---
 
+## Mainland Chinese University Thesis Format
+
+For mainland Chinese university thesis and dissertation formatting, see `chinese_higher_education_thesis_format.md`.
+
+This is an additional ARS profile, not a replacement for APA 7, APA 7 Chinese, Chicago, MLA, IEEE, Vancouver, LaTeX, DOCX, or PDF support.
+
+### Priority Rules
+
+1. User-provided school, college, graduate school, or department template.
+2. User-provided advisor, defense, inspection, or archive requirement.
+3. School profile in `chinese_higher_education_thesis_format.md`.
+4. Mainland China university fallback in `chinese_higher_education_thesis_format.md`.
+
+If a school rule conflicts with this fallback, the school rule wins. If two user-provided rules conflict, pause and ask the user to confirm the controlling official rule.
+
+### Citation Family
+
+GB/T 7714 is the safer fallback citation family for mainland Chinese university theses when no school rule is provided.
+
+The existing APA 7 Chinese guide is based mainly on Taiwan academic conventions. Use it when the target venue or user asks for APA-style Chinese citations, but do not treat it as the default mainland university thesis standard.
+
+### Current Profiles
+
+| Profile | Intended use |
+|---------|--------------|
+| Mainland China University Thesis Fallback | Generic fallback when no school-specific template is available |
+| Guangxi University Undergraduate Thesis/Design | Guangxi University undergraduate thesis or design formatting review |
+| Sichuan University Master/Doctoral Dissertation | Sichuan University graduate dissertation formatting review |
+
+### Output Notes
+
+LaTeX, DOCX, and PDF output generation continue to use the existing ARS mechanisms. When the target is a mainland Chinese university thesis, apply the selected school profile as an additional formatting checklist during `format-convert`, `citation-check`, or final formatting.
+
+---
+
 ## AI-Generated Content Citation (by Format)
 
 | Format | How to Cite AI |
