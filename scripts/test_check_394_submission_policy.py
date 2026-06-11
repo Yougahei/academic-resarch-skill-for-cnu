@@ -188,3 +188,13 @@ def test_report_schema_dropped_null_semantics_fails(report_schema):
         "description"] = "a slug"
     errs = check_report_schema(mutated)
     assert errs
+
+
+def test_report_schema_string_none_is_not_null(report_schema):
+    # Final-round review P3: the enum member must be JSON null, not the
+    # STRING "None" — a str() mapping in the lint would let them collide.
+    mutated = json.loads(json.dumps(report_schema))
+    slug = mutated["properties"]["header"]["properties"]["policy_slug"]
+    slug["enum"] = ["None", "advisory", "strict"]
+    errs = check_report_schema(mutated)
+    assert errs and "enum" in errs[0]

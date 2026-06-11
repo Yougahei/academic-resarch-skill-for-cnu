@@ -173,7 +173,9 @@ def check_report_schema(schema: dict) -> list[str]:
             .get("properties", {}).get("policy_slug"))
     if slug is None:
         return ["invariant 5: report schema has no header.policy_slug"]
-    if set(map(str, slug.get("enum", []))) != {"None", "advisory", "strict"}:
+    # Direct value comparison — None must be JSON null, not the string
+    # "None" (a str() mapping would let the two collide; final-round P3).
+    if set(slug.get("enum", [])) != {None, "advisory", "strict"}:
         fails.append(
             f"invariant 5: policy_slug enum is {slug.get('enum')!r}, "
             "expected exactly [null, 'advisory', 'strict'] — the closed set "

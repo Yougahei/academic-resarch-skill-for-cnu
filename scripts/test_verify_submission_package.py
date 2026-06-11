@@ -1385,3 +1385,23 @@ def test_freshness_dropped_input_is_stale(tmp_path, capsys):
     out = capsys.readouterr().out
     assert rc == 5
     assert "STALE-REPORT reason=inputs_mismatch" in out
+
+
+def test_freshness_thinned_roster_is_stale(tmp_path, capsys):
+    # Final-round review P2: the report file is excluded from the package
+    # fingerprint, so a hand-edited report with checks thinned out (here:
+    # emptied) would otherwise read as fresh and re-evaluate to a clean
+    # exit — the roster guard build_report enforces at write time must
+    # hold on reuse too.
+    _, _, package_dir = run_on("orphan_intext", tmp_path,
+                               extra_args=["--policy", "strict"])
+    report_path = package_dir / REPORT_BASENAME
+    doctored = json.loads(report_path.read_text(encoding="utf-8"))
+    doctored["checks"] = []
+    report_path.write_text(json.dumps(doctored), encoding="utf-8")
+    capsys.readouterr()
+    rc = run([str(package_dir), "--check-freshness", "--policy", "strict"])
+    out = capsys.readouterr().out
+    assert rc == 5
+    assert "STALE-REPORT reason=roster_mismatch" in out
+    assert "report fresh" not in out

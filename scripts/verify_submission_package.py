@@ -1497,6 +1497,17 @@ def check_freshness(package_dir: Path, report_path: Path,
     if current != stamped_fingerprint:
         return "STALE-REPORT reason=fingerprint_mismatch", 5
     try:
+        emitted = {c["id"] for c in report["checks"]}
+    except (KeyError, TypeError):
+        return "STALE-REPORT reason=unreadable_report", 5
+    if emitted != set(_CHECK_REGISTRY):
+        # Roster guard on REUSE (same rule build_report enforces at write
+        # time): the report file is excluded from the package fingerprint,
+        # so a hand-edited report (e.g. checks: []) would otherwise read as
+        # fresh and re-evaluate to a clean exit — a strict verdict must not
+        # evaporate through a thinned-out roster (final-round review).
+        return "STALE-REPORT reason=roster_mismatch", 5
+    try:
         token, code = evaluate_policy(report, expected_policy)
     except (KeyError, TypeError):
         return "STALE-REPORT reason=unreadable_report", 5
