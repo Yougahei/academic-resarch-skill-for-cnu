@@ -76,9 +76,9 @@ Codex 和 Claude Code 会通过软链接读取同一份 skill 内容。
 
 ## 中国高校论文适配方向
 
-当前版本主要完成了“入口文档中文化 + 项目定位调整”。后续二开建议优先补强这些方向：
+当前版本已完成“入口文档中文化 + 项目定位调整”，并开始加入中国高校论文格式 reference。后续二开建议优先补强这些方向：
 
-- 中国高校本科/研究生论文模板适配：见 [中国高校本科论文格式参考](academic-paper/references/chinese_undergraduate_thesis_format.md)
+- 中国高校本科/研究生论文模板适配：见 [中国高校论文格式参考](academic-paper/references/chinese_higher_education_thesis_format.md)
 - GB/T 7714 参考文献格式与学校格式差异处理
 - 开题报告、任务书、中期检查、答辩稿等中国高校过程材料
 - 学院/学校自定义 Word 模板解析与格式检查
