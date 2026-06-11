@@ -151,14 +151,14 @@ User Input →
 - Need to comply with a specific journal's formatting requirements
 - Need a mainland Chinese university thesis formatting audit report
 - Need to check thesis table of contents, pagination, heading hierarchy, front matter, figure/table/equation formatting, or archive materials
-- Need a safe DOCX final-formatting copy for a Chinese university thesis
+- Need Chinese university thesis output through a LaTeX/Pandoc template profile
 
 **Not Applicable When**:
 - No existing content (→ full mode)
 - Need content modifications (→ revision mode)
 - Need destructive DOCX rewriting in-place (the formatter writes a copy instead)
 
-**Expected Output**: Document in target format, structured Chinese Thesis Format Audit Report, or formatted DOCX copy plus report
+**Expected Output**: Document in target format, structured Chinese Thesis Format Audit Report, or Chinese university thesis output through the selected template profile
 **Expected Duration**: Short
 **Agents Used**: formatter used standalone
 

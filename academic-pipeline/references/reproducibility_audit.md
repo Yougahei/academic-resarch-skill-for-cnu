@@ -32,7 +32,7 @@ Stage 4 REVISE: [items addressed / total]
 Stage 3' RE-REVIEW: [decision]
 Stage 4' RE-REVISE: [executed / skipped]
 Stage 4.5 FINAL INTEGRITY: [PASS/FAIL] -> [refs verified]
-Stage 5 FINALIZE: Ask format style -> MD -> DOCX via Pandoc when available (otherwise instructions) -> optional Chinese university DOCX formatted copy + report via docx_thesis_formatter -> LaTeX (apa7/ieee/etc.) -> tectonic -> PDF
+Stage 5 FINALIZE: Ask format style -> MD -> select target style/profile -> DOCX via Pandoc when available (otherwise instructions) -> LaTeX (apa7/ieee/Chinese thesis template/etc.) -> tectonic/XeLaTeX -> PDF
 Stage 6 PROCESS SUMMARY: Ask language -> MD -> LaTeX -> PDF (zh/en)
 
 Integrity Summary:

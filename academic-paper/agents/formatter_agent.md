@@ -51,6 +51,7 @@ Reference: `references/latex_template_reference.md`
 - Tables as `tabular` environments
 - Figures as `figure` environments with captions
 - Citations as `\cite{}`, `\citep{}`, `\citet{}`
+- For mainland Chinese university thesis output, use the built-in Chinese thesis templates in `templates/` only when the user explicitly selects that profile or no official school template is supplied.
 
 **Bibliography .bib file**:
 - All references in BibTeX format
@@ -251,33 +252,31 @@ Cover at least these audit areas: page setup, front matter, abstracts and keywor
 
 Severity labels: `Blocker`, `Major`, `Minor`, `Needs confirmation`.
 
-## Chinese University DOCX Final Formatting
+## Chinese University Thesis Template Formatting
 
-When the user supplies a `.docx` thesis draft and asks for final Chinese university thesis formatting, use the deterministic helper:
+When the user asks to produce a mainland Chinese university thesis artifact (for example, "按广西大学本科论文格式生成", "按四川大学硕博论文格式排版", "输出中国高校论文 PDF/DOCX/LaTeX"), keep the original formatter path and select the appropriate LaTeX/Pandoc template profile.
 
-```bash
-python3 scripts/docx_thesis_formatter.py <input.docx> \
-  --profile <mainland-fallback|guangxi-undergrad|sichuan-grad> \
-  --output <formatted.docx> \
-  --title "<thesis title>" \
-  --report <format-report.md>
-```
+References:
+- `references/chinese_higher_education_thesis_format.md`
+- `references/latex_template_reference.md`
 
-The helper creates a formatted copy and a Markdown report. It is safe-by-default: it refuses to overwrite the input file and only replaces an existing output when `--force-overwrite-output` is explicitly passed.
+Built-in fallback templates:
+- `templates/chinese_thesis_guangxi_undergrad_template.tex`
+- `templates/chinese_thesis_sichuan_grad_template.tex`
 
-### Supported First-Generation Operations
+### Template Selection Rules
 
-- Page size and margins.
-- Normal/body style font, size, first-line indent, and fixed line spacing.
-- Heading 1-4 style definitions.
-- Basic figure/table caption style normalization.
-- Section header text when supported by the selected profile.
-- Centered footer `PAGE` field.
-- Markdown report with applied changes and manual verification items.
+1. If the user supplies an official school `.tex`, `.docx`, or formatting document, use that as the controlling template/reference.
+2. If the user explicitly selects Guangxi University undergraduate thesis/design and no official template is supplied, use `templates/chinese_thesis_guangxi_undergrad_template.tex`.
+3. If the user explicitly selects Sichuan University master/doctoral dissertation and no official template is supplied, use `templates/chinese_thesis_sichuan_grad_template.tex`.
+4. If the school is mainland Chinese but not covered by a built-in profile, use the Mainland China University Thesis Fallback from `chinese_higher_education_thesis_format.md` and ask the user to confirm assumptions.
 
-### Manual Verification Required
+### Output Behavior
 
-Do not claim final visual fidelity after running the helper. Tell the user to open the generated DOCX in Word/WPS/LibreOffice and refresh fields, table of contents, and final pagination. The helper does not generate official covers, school seals, signatures, originality declarations, or authorization pages from memory.
+- LaTeX/PDF: generate through Pandoc + XeLaTeX with the selected `.tex` template.
+- DOCX: preserve the existing Pandoc `--reference-doc` mechanism. Use the user's official Word template when available; otherwise provide a fallback DOCX command and mark final Word/WPS visual checks as required.
+- Citations: use GB/T 7714 CSL for mainland Chinese university fallback unless the user or school specifies another style.
+- Do not treat the Taiwan-oriented APA 7 Chinese citation guide as the mainland Chinese university default.
 
 ### Handling Footnotes (Chicago Notes-Bibliography)
 
@@ -496,6 +495,7 @@ Step 1: Confirm Output Requirements
       ├── Markdown -> always generated (as base format)
       ├── LaTeX -> if output_format includes LaTeX or Combined
       ├── DOCX -> generate via Pandoc when available; otherwise provide conversion instructions
+      ├── Chinese university thesis -> use selected LaTeX/Pandoc template profile when requested
       ├── PDF instructions -> if output_format includes PDF or Combined
       └── Cover Letter -> if target_journal is specified
 

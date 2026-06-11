@@ -1,0 +1,112 @@
+\documentclass[UTF8,zihao=-4,scheme=chinese]{ctexbook}
+
+% Sichuan University Master/Doctoral Dissertation Pandoc template.
+% Compile with XeLaTeX. User-provided graduate school templates override
+% this fallback profile whenever available.
+
+\usepackage[a4paper,left=3.0cm,right=2.5cm,top=2.8cm,bottom=2.5cm,headsep=0.8cm,footskip=1.0cm]{geometry}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{titlesec}
+\usepackage{tocloft}
+
+\setmainfont{Times New Roman}
+\setCJKmainfont{SimSun}[AutoFakeBold=2.0]
+\setCJKsansfont{SimHei}[AutoFakeBold=2.0]
+\setmonofont{Courier New}
+
+\setlength{\parindent}{2em}
+\setstretch{1.5}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black,breaklinks=true}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[CE]{$if(title)$$title$$else$四川大学学位论文$endif$}
+\fancyhead[CO]{$if(author)$$author$$endif$}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\titleformat{\chapter}[hang]{\centering\heiti\zihao{3}\bfseries}{第\thechapter 章}{1em}{}
+\titleformat{\section}{\heiti\zihao{4}\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\heiti\zihao{-4}\bfseries}{\thesubsection}{1em}{}
+\captionsetup{font=small,labelfont=bf,labelsep=quad}
+
+\renewcommand{\contentsname}{目录}
+\renewcommand{\bibname}{参考文献}
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\pandocbounded}[1]{#1}
+
+$if(csl-refs)$
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newenvironment{CSLReferences}[2]{\begin{thebibliography}{99}}{\end{thebibliography}}
+\newcommand{\CSLBlock}[1]{#1\par}
+\newcommand{\CSLLeftMargin}[1]{\makebox[\cslhangindent][l]{#1}}
+\newcommand{\CSLRightInline}[1]{#1}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+$endif$
+
+\begin{document}
+
+\frontmatter
+\begin{titlepage}
+\centering
+\vspace*{1.6cm}
+{\heiti\zihao{2} 四川大学学位论文 \par}
+\vspace{1.4cm}
+{\heiti\zihao{2} $if(title)$$title$$else$论文题目$endif$ \par}
+\vspace{1.2cm}
+{\zihao{3} $if(subtitle)$$subtitle$$endif$ \par}
+\vfill
+\begin{tabular}{rl}
+培养单位： & $if(college)$$college$$else$培养单位$endif$ \\
+学科专业： & $if(major)$$major$$else$学科专业$endif$ \\
+研究方向： & $if(research-direction)$$research-direction$$else$研究方向$endif$ \\
+研究生： & $if(author)$$author$$else$作者姓名$endif$ \\
+指导教师： & $if(advisor)$$advisor$$else$指导教师$endif$ \\
+完成日期： & $if(date)$$date$$else$\today$endif$ \\
+\end{tabular}
+\end{titlepage}
+
+$if(abstract-zh)$
+\chapter*{摘要}
+\addcontentsline{toc}{chapter}{摘要}
+$abstract-zh$
+
+\noindent\textbf{关键词：}$if(keywords-zh)$$keywords-zh$$endif$
+\clearpage
+$endif$
+
+$if(abstract-en)$
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+$abstract-en$
+
+\noindent\textbf{Keywords: }$if(keywords-en)$$keywords-en$$endif$
+\clearpage
+$endif$
+
+\tableofcontents
+\mainmatter
+
+$body$
+
+$if(nocite-ids)$
+\nocite{$for(nocite-ids)$$it$$sep$, $endfor$}
+$endif$
+
+\end{document}

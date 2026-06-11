@@ -453,7 +453,8 @@ Future implementation should connect this reference to:
 
 For output generation, keep using the existing ARS output mechanisms:
 
-- LaTeX guidance remains in `latex_template_reference.md`.
+- LaTeX and Pandoc template guidance remains in `latex_template_reference.md`.
+- Built-in fallback templates are available at `templates/chinese_thesis_guangxi_undergrad_template.tex` and `templates/chinese_thesis_sichuan_grad_template.tex`.
 - Citation conversion remains in `citation_format_switcher.md`.
 - DOCX/PDF conversion guidance remains in `formatter_agent` and the existing reference files.
 

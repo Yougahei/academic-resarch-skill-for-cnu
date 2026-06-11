@@ -1,0 +1,113 @@
+\documentclass[UTF8,zihao=-4,scheme=chinese]{ctexrep}
+
+% Guangxi University Undergraduate Thesis/Design Pandoc template.
+% Compile with XeLaTeX. Use this as a profile template, not as a
+% substitute for a user-supplied official school template.
+
+\usepackage[a4paper,left=2.8cm,right=2.6cm,top=2.6cm,bottom=2.6cm,headsep=0.8cm,footskip=1.0cm]{geometry}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{titlesec}
+\usepackage{tocloft}
+
+\setmainfont{Times New Roman}
+\setCJKmainfont{SimSun}[AutoFakeBold=2.0]
+\setCJKsansfont{SimHei}[AutoFakeBold=2.0]
+\setmonofont{Courier New}
+
+\setlength{\parindent}{2em}
+\setstretch{1.5}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black,breaklinks=true}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[C]{$if(university)$$university$$else$广西大学本科毕业论文（设计）$endif$}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\titleformat{\chapter}[hang]{\centering\heiti\zihao{3}\bfseries}{第\thechapter 章}{1em}{}
+\titleformat{\section}{\heiti\zihao{4}\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\heiti\zihao{-4}\bfseries}{\thesubsection}{1em}{}
+\captionsetup{font=small,labelfont=bf,labelsep=quad}
+
+\renewcommand{\contentsname}{目录}
+\renewcommand{\bibname}{参考文献}
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\pandocbounded}[1]{#1}
+
+$if(csl-refs)$
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newenvironment{CSLReferences}[2]{\begin{thebibliography}{99}}{\end{thebibliography}}
+\newcommand{\CSLBlock}[1]{#1\par}
+\newcommand{\CSLLeftMargin}[1]{\makebox[\cslhangindent][l]{#1}}
+\newcommand{\CSLRightInline}[1]{#1}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+$endif$
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2.0cm}
+{\heiti\zihao{2} $if(title)$$title$$else$论文题目$endif$ \par}
+\vspace{1.8cm}
+{\zihao{3} $if(subtitle)$$subtitle$$endif$ \par}
+\vfill
+\begin{tabular}{rl}
+学院： & $if(college)$$college$$else$学院名称$endif$ \\
+专业： & $if(major)$$major$$else$专业名称$endif$ \\
+学生姓名： & $if(author)$$author$$else$作者姓名$endif$ \\
+指导教师： & $if(advisor)$$advisor$$else$指导教师$endif$ \\
+完成日期： & $if(date)$$date$$else$\today$endif$ \\
+\end{tabular}
+\end{titlepage}
+
+\pagenumbering{Roman}
+$if(abstract-zh)$
+\chapter*{摘要}
+\addcontentsline{toc}{chapter}{摘要}
+$abstract-zh$
+
+\noindent\textbf{关键词：}$if(keywords-zh)$$keywords-zh$$endif$
+\clearpage
+$endif$
+
+$if(abstract-en)$
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+$abstract-en$
+
+\noindent\textbf{Keywords: }$if(keywords-en)$$keywords-en$$endif$
+\clearpage
+$endif$
+
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+$body$
+
+$if(nocite-ids)$
+\nocite{$for(nocite-ids)$$it$$sep$, $endfor$}
+$endif$
+
+$if(bibliography)$
+\clearpage
+$endif$
+
+\end{document}

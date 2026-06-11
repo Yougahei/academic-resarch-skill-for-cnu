@@ -340,6 +340,77 @@ Chinese abstract content...
 \textbf{Keywords}: Keyword 1, Keyword 2, Keyword 3
 ```
 
+## Mainland Chinese University Thesis Templates
+
+Use these templates only when the user explicitly targets a mainland Chinese university thesis format. They extend the existing LaTeX/Pandoc path; they do not replace APA 7, Taiwan APA Chinese citation guidance, journal templates, or general DOCX/PDF output behavior.
+
+### Profile Priority
+
+1. User-provided school, graduate school, college, or department official template.
+2. User-provided advisor, defense, archive, or inspection requirement.
+3. Built-in school profile and template.
+4. Mainland China University Thesis Fallback.
+
+If a user-provided official template conflicts with a built-in profile, surface the conflict and follow the user-provided official template after confirmation.
+
+### Built-In Template Files
+
+| Profile | Template | Intended Use |
+|---------|----------|--------------|
+| Guangxi University Undergraduate Thesis/Design | `templates/chinese_thesis_guangxi_undergrad_template.tex` | Undergraduate thesis/design fallback when no official `.tex`/`.docx` template is supplied |
+| Sichuan University Master/Doctoral Dissertation | `templates/chinese_thesis_sichuan_grad_template.tex` | Graduate dissertation fallback when no official graduate-school template is supplied |
+
+### Required Engine And Citation Style
+
+- Compile with XeLaTeX.
+- Use CJK fonts available on the user's machine. The built-in templates default to SimSun/SimHei with Times New Roman for Latin text.
+- Prefer GB/T 7714 CSL for Pandoc citation processing when the user targets mainland Chinese university thesis output.
+- APA 7 Chinese citation guidance remains available for Taiwan-style or APA-targeted Chinese work, but is not the mainland Chinese university fallback.
+
+### Markdown -> Chinese Thesis PDF
+
+```bash
+pandoc paper.md -o paper.pdf \
+  --template=academic-paper/templates/chinese_thesis_guangxi_undergrad_template.tex \
+  --pdf-engine=xelatex \
+  --citeproc \
+  --bibliography=references.bib \
+  --csl=chinese-gb7714-2005-numeric.csl
+```
+
+For Sichuan University graduate dissertation output, replace the template path:
+
+```bash
+pandoc paper.md -o paper.pdf \
+  --template=academic-paper/templates/chinese_thesis_sichuan_grad_template.tex \
+  --pdf-engine=xelatex \
+  --citeproc \
+  --bibliography=references.bib \
+  --csl=chinese-gb7714-2005-numeric.csl
+```
+
+### Markdown -> Chinese Thesis LaTeX
+
+```bash
+pandoc paper.md -o paper.tex \
+  --template=academic-paper/templates/chinese_thesis_guangxi_undergrad_template.tex \
+  --citeproc \
+  --bibliography=references.bib \
+  --csl=chinese-gb7714-2005-numeric.csl
+```
+
+### Markdown -> Chinese Thesis DOCX
+
+DOCX output remains the original Pandoc mechanism. If the user provides an official Word template, use it as `--reference-doc`. If no official Word template is available, produce DOCX with the closest available reference document and mark final visual checks as required in Word/WPS/LibreOffice.
+
+```bash
+pandoc paper.md -o paper.docx \
+  --reference-doc=school_official_reference.docx \
+  --citeproc \
+  --bibliography=references.bib \
+  --csl=chinese-gb7714-2005-numeric.csl
+```
+
 ## Common LaTeX Compilation Issues
 
 | Issue | Solution |
