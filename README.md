@@ -92,6 +92,17 @@
 
 > ⚠️ 如果你之前安装过原版 `Imbad0202/academic-research-skills`，两个插件的 skill 名称相同（`deep-research`、`academic-paper` 等），会导致覆盖。建议先卸载原版再安装本 fork，或者用手动软链接方式分别指向不同目录。
 
+### 环境依赖
+
+流水线本身不需要安装任何东西。只有当你需要**导出 PDF 或 DOCX** 时才需要以下工具：
+
+| 工具 | 用途 | macOS | Windows | Linux |
+|------|------|-------|---------|-------|
+| Pandoc | Markdown 转 DOCX/PDF | `brew install pandoc` | [pandoc.org](https://pandoc.org/installing.html) 下载安装器 | `apt install pandoc` |
+| LaTeX 引擎 | 生成 PDF | `brew install tectonic`（无需 sudo）<br>或 `brew install --cask basictex`（完整版） | 安装 [MiKTeX](https://miktex.org/download) 或 [TeX Live](https://tug.org/texlive/) | `apt install texlive-xetex` |
+
+Windows 用户注意：系统自带宋体、黑体、楷体、隶书，无需额外安装中文字体。macOS 和 Linux 用户若缺少字体，LaTeX 会自动回退到系统可用字体。
+
 ### Claude Code 插件
 
 ```text
@@ -106,7 +117,7 @@ skillshare install https://github.com/Yougahei/acdemic-resarch-skill-for-CNU.git
 skillshare sync --all
 ```
 
-### 手动软链接
+### 手动克隆（macOS / Linux）
 
 ```bash
 git clone https://github.com/Yougahei/acdemic-resarch-skill-for-CNU.git ~/acdemic-resarch-skill-for-CNU
@@ -117,6 +128,8 @@ ln -s ~/acdemic-resarch-skill-for-CNU/academic-paper .claude/skills/academic-pap
 ln -s ~/acdemic-resarch-skill-for-CNU/academic-paper-reviewer .claude/skills/academic-paper-reviewer
 ln -s ~/acdemic-resarch-skill-for-CNU/academic-pipeline .claude/skills/academic-pipeline
 ```
+
+Windows 用户推荐使用上方的 Claude Code 插件或 skillshare 方式安装，无需手动处理软链接。
 
 ## 快速开始
 
