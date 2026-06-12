@@ -90,6 +90,8 @@
 
 ## 快速安装
 
+> ⚠️ 如果你之前安装过原版 `Imbad0202/academic-research-skills`，两个插件的 skill 名称相同（`deep-research`、`academic-paper` 等），会导致覆盖。建议先卸载原版再安装本 fork，或者用手动软链接方式分别指向不同目录。
+
 ### Claude Code 插件
 
 ```text
