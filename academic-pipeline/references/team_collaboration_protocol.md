@@ -86,9 +86,9 @@ For each stage transition, the following handoff procedure applies:
 |------|--------|
 | **Who hands off** | Integration Lead |
 | **Who receives** | Lead Author |
-| **Materials** | Final Verified Draft + Final Integrity Report |
+| **Materials** | Final Verified Draft + Final Integrity Report; official school template/reference document when Chinese university thesis formatting is requested |
 | **Approval needed** | Integrity verdict PASS with zero issues |
-| **Handoff checklist** | All previous integrity issues confirmed resolved; Material Passport updated to VERIFIED |
+| **Handoff checklist** | All previous integrity issues confirmed resolved; Material Passport updated to VERIFIED; if Chinese university thesis formatting is requested, official school/college template or selected built-in profile is recorded |
 
 ---
 

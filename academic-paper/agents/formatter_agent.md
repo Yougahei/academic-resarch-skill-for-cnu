@@ -51,6 +51,7 @@ Reference: `references/latex_template_reference.md`
 - Tables as `tabular` environments
 - Figures as `figure` environments with captions
 - Citations as `\cite{}`, `\citep{}`, `\citet{}`
+- For mainland Chinese university thesis output, use the built-in Chinese thesis templates in `templates/` only when the user explicitly selects that profile or no official school template is supplied.
 
 **Bibliography .bib file**:
 - All references in BibTeX format
@@ -250,6 +251,58 @@ Emit a `## Chinese Thesis Format Audit Report` with these sections:
 Cover at least these audit areas: page setup, front matter, abstracts and keywords, table of contents and pagination, heading hierarchy, body formatting, figures/tables/equations, references and GB/T 7714, declarations/appendices/acknowledgements, and process/archive materials where applicable.
 
 Severity labels: `Blocker`, `Major`, `Minor`, `Needs confirmation`.
+
+## Chinese University Thesis Template Formatting
+
+When the user asks to produce a mainland Chinese university thesis artifact (for example, "按广西大学本科论文格式生成", "按四川大学硕博论文格式排版", "输出中国高校论文 PDF/DOCX/LaTeX"), keep the original formatter path and select the appropriate LaTeX/Pandoc template profile.
+
+References:
+- `references/chinese_higher_education_thesis_format.md`
+- `references/latex_template_reference.md`
+
+Built-in fallback templates:
+- `templates/chinese_thesis_guangxi_undergrad_template.tex`
+- `templates/chinese_thesis_sichuan_grad_template.tex`
+- `templates/docx/mainland_fallback_reference.docx`
+- `templates/docx/guangxi_undergrad_reference.docx`
+- `templates/docx/sichuan_grad_reference.docx`
+
+### Template Selection Rules
+
+1. If the user supplies an official school `.tex`, `.docx`, or formatting document, use that as the controlling template/reference.
+2. If the user explicitly selects Guangxi University undergraduate thesis/design and no official template is supplied, use `templates/chinese_thesis_guangxi_undergrad_template.tex`.
+3. If the user explicitly selects Sichuan University master/doctoral dissertation and no official template is supplied, use `templates/chinese_thesis_sichuan_grad_template.tex`.
+4. If the school is mainland Chinese but not covered by a built-in profile, use the Mainland China University Thesis Fallback from `chinese_higher_education_thesis_format.md` and ask the user to confirm assumptions.
+
+### Output Behavior
+
+- LaTeX/PDF: generate through Pandoc + XeLaTeX with the selected `.tex` template.
+- DOCX: preserve the existing Pandoc `--reference-doc` mechanism. Use the user's official Word template when available; otherwise use the built-in profile reference DOCX.
+- Student-facing export: when a concrete artifact is requested, use `scripts/export_chinese_thesis.py` to select the profile and call Pandoc consistently.
+- Citations: use GB/T 7714 CSL for mainland Chinese university fallback unless the user or school specifies another style.
+- Do not treat the Taiwan-oriented APA 7 Chinese citation guide as the mainland Chinese university default.
+
+### Student-Facing Export Commands
+
+```bash
+python3 scripts/export_chinese_thesis.py \
+  --input paper.md \
+  --profile guangxi-undergrad \
+  --format docx \
+  --output final.docx
+```
+
+For PDF output:
+
+```bash
+python3 scripts/export_chinese_thesis.py \
+  --input paper.md \
+  --profile sichuan-grad \
+  --format pdf \
+  --output final.pdf
+```
+
+The script writes a sibling `.format_report.md` file. For DOCX output, the report reminds the user to open the file in Word/WPS/LibreOffice and refresh fields for table of contents, page numbers, captions, headers, and final pagination.
 
 ### Handling Footnotes (Chicago Notes-Bibliography)
 
@@ -468,6 +521,7 @@ Step 1: Confirm Output Requirements
       ├── Markdown -> always generated (as base format)
       ├── LaTeX -> if output_format includes LaTeX or Combined
       ├── DOCX -> generate via Pandoc when available; otherwise provide conversion instructions
+      ├── Chinese university thesis -> use selected LaTeX/Pandoc template profile when requested
       ├── PDF instructions -> if output_format includes PDF or Combined
       └── Cover Letter -> if target_journal is specified
 
@@ -555,6 +609,13 @@ pandoc paper.md -o paper.docx \
   --reference-doc=template_zh.docx \
   --pdf-engine=xelatex \
   -V CJKmainfont="Noto Sans CJK TC"
+
+# Chinese university thesis profile
+python3 scripts/export_chinese_thesis.py \
+  --input paper.md \
+  --profile guangxi-undergrad \
+  --format docx \
+  --output final.docx
 ```
 
 **Style Mapping (Markdown -> Word Styles)**:

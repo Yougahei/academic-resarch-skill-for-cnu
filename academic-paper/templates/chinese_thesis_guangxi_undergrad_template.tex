@@ -1,0 +1,272 @@
+% Guangxi University Undergraduate Thesis/Design LaTeX Template
+% Source: 广西大学资源环境与材料学院 论文审查心得及注意事项 + 本科毕业论文参考模板
+% Compile with XeLaTeX.
+
+\documentclass[UTF8,zihao=-4,linespread=1.0,twoside,scheme=chinese]{ctexrep}
+
+% ===== Page Geometry =====
+% Spec: A4, top 2.54cm, bottom 2.54cm, left 2.2cm, right 2.2cm
+% Header 2cm from top, footer 1.75cm from bottom
+\usepackage[a4paper,
+  left=2.2cm, right=2.2cm,
+  top=2.54cm, bottom=2.54cm,
+  headheight=0.8cm, headsep=1.2cm,
+  footskip=0.79cm]{geometry}
+
+% ===== Fonts =====
+% Spec: 宋体(SimSun) for body, 黑体(SimHei) for headings, Times New Roman for English
+% macOS: Songti SC / Heiti SC / Kaiti SC; Windows: SimSun / SimHei / KaiTi
+\setmainfont{Times New Roman}
+\setCJKmainfont{Songti SC}[
+  BoldFont=Heiti SC,
+  ItalicFont=Kaiti SC,
+  BoldItalicFont=Heiti SC]
+\setCJKsansfont{Heiti SC}[BoldFont=Heiti SC]
+\setCJKmonofont{Kaiti SC}[BoldFont=Heiti SC]
+\setmonofont{Courier New}
+
+% ===== Line Spacing =====
+% Spec: fixed 20pt throughout body text
+% 小四(12pt) with 20pt baselineskip
+\usepackage{setspace}
+\renewcommand{\normalsize}{\fontsize{12pt}{20pt}\selectfont}
+\setstretch{1.0}
+
+% ===== First-line Indent =====
+% Spec: 2 Chinese characters
+\usepackage{indentfirst}
+\setlength{\parindent}{2em}
+
+% ===== Headers and Footers =====
+\usepackage{fancyhdr}
+\fancyhf{}
+% Header: left "广西大学本科毕业论文", right paper title, 隶书小四(12pt)
+% 隶书 not available on macOS; use Kaiti SC as substitute
+\fancyhead[LE]{\kaiti\zihao{-4} 广西大学本科毕业论文}
+\fancyhead[RO]{\kaiti\zihao{-4} $if(title)$$title$$endif$}
+\fancyhead[RE]{\kaiti\zihao{-4} 广西大学本科毕业论文}
+\fancyhead[LO]{\kaiti\zihao{-4} $if(title)$$title$$endif$}
+% Footer: page number centered, Times New Roman 五号(10.5pt)
+\fancyfoot[C]{\zihao{5}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\zihao{5}\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% ===== Heading Formatting =====
+% Spec: Level 1 小二号黑体(18pt) centered, blank line before/after
+% Level 2 小三号黑体(15pt) left-aligned, no extra space
+% Level 3 四号黑体(14pt) left-aligned, no extra space
+% Level 4 小四号黑体(12pt) left-aligned, no extra space
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]
+  {\centering\heiti\zihao{-2}\bfseries}
+  {第\thechapter 章}{1em}{}
+\titlespacing{\chapter}{0pt}{20pt}{20pt}
+
+\titleformat{\section}
+  {\heiti\zihao{-3}\bfseries\raggedright}
+  {\thesection}{1em}{}
+\titlespacing{\section}{0pt}{0pt}{0pt}
+
+\titleformat{\subsection}
+  {\heiti\zihao{4}\bfseries\raggedright}
+  {\thesubsection}{1em}{}
+\titlespacing{\subsection}{0pt}{0pt}{0pt}
+
+\titleformat{\subsubsection}
+  {\heiti\zihao{-4}\bfseries\raggedright}
+  {\thesubsubsection}{1em}{}
+\titlespacing{\subsubsection}{0pt}{0pt}{0pt}
+
+% ===== Table of Contents =====
+% Spec: "目 录" 三号黑体(16pt) centered, content 小四(12pt), 1.25x line spacing
+\usepackage{tocloft}
+\renewcommand{\cfttoctitlefont}{\hfill\heiti\zihao{3}}
+\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\contentsname}{目\ \ 录}
+\renewcommand{\cftchapfont}{\zihao{-4}}
+\renewcommand{\cftsecfont}{\zihao{-4}}
+\renewcommand{\cftsubsecfont}{\zihao{-4}}
+\renewcommand{\cftchappagefont}{\zihao{-4}}
+\renewcommand{\cftsecpagefont}{\zihao{-4}}
+\renewcommand{\cftsubsecpagefont}{\zihao{-4}}
+% TOC line spacing: 1.25x
+\renewcommand{\cftbeforechapskip}{0pt}
+\renewcommand{\cftbeforesecskip}{0pt}
+\renewcommand{\cftbeforesubsecskip}{0pt}
+% Secondary heading indent 2 chars, tertiary 4 chars
+\renewcommand{\cftsecindent}{2em}
+\renewcommand{\cftsubsecindent}{4em}
+
+% ===== Captions =====
+% Spec: 五号(10.5pt) bold, figure below/table above, centered, no trailing punctuation
+\usepackage{caption}
+\usepackage[font=bf,labelsep=quad]{caption}
+\captionsetup{
+  font={bf,small},
+  labelfont={bf},
+  labelsep=quad,
+  justification=centering,
+  singlelinecheck=false}
+
+% ===== Three-line Tables =====
+% Spec: top/bottom 1.5pt, header separator 0.5pt
+\usepackage{booktabs}
+\renewcommand{\heavyrulewidth}{1.5pt}
+\renewcommand{\lightrulewidth}{0.5pt}
+
+% ===== Figures and Graphics =====
+\usepackage{graphicx}
+\graphicspath{{figures/}{images/}{./}}
+
+% ===== Tables =====
+\usepackage{longtable}
+\usepackage{array}
+
+% ===== Mathematics =====
+\usepackage{amsmath}
+
+% ===== Hyperlinks =====
+\usepackage{hyperref}
+\usepackage{xurl}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black,
+  breaklinks=true}
+
+% ===== Labels =====
+\renewcommand{\bibname}{参考文献}
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+
+% ===== Pandoc Compatibility =====
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\pandocbounded}[1]{#1}
+% Pandoc longtable uses \LTcaptype{none} for unnumbered tables
+\expandafter\ifx\csname c@none\endcsname\relax
+  \newcounter{none}
+\fi
+
+$if(csl-refs)$
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newenvironment{CSLReferences}[2]{\begin{thebibliography}{99}}{\end{thebibliography}}
+\newcommand{\CSLBlock}[1]{#1\par}
+\newcommand{\CSLLeftMargin}[1]{\makebox[\cslhangindent][l]{#1}}
+\newcommand{\CSLRightInline}[1]{#1}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+$endif$
+
+% ===== Commands =====
+\newcommand{\kaiti}{\CJKfamily{zhkai}}
+
+\begin{document}
+
+% ===== Title Page =====
+% Spec: 黑体一号(26pt) centered, other info 宋体四号(14pt) centered
+\begin{titlepage}
+\centering
+\vspace*{2.0cm}
+{\heiti\zihao{1} 本科毕业论文 \par}
+\vspace{0.8cm}
+{\heiti\zihao{1} $if(title)$$title$$else$课题名称$endif$ \par}
+\vfill
+{\songti\zihao{4}
+\begin{tabular}{rl}
+学院： & $if(college)$$college$$else$资源环境与材料学院$endif$ \\
+专业： & $if(major)$$major$$else$专业名称$endif$ \\
+班级： & $if(class-name)$$class-name$$else$班级$endif$ \\
+学号： & $if(student-id)$$student-id$$else$学号$endif$ \\
+姓名： & $if(author)$$author$$else$姓名$endif$ \\
+指导老师： & $if(advisor)$$advisor$$else$指导教师$endif$ \\
+\end{tabular}
+\par}
+\vspace{1.5cm}
+{\songti\zihao{4} $if(date)$$date$$else$二〇二六年五月$endif$ \par}
+\end{titlepage}
+
+% ===== Front Matter: Single-sided, Roman numerals =====
+\pagenumbering{Roman}
+\setcounter{page}{1}
+
+% ===== Chinese Abstract =====
+% Spec: Chinese title 黑体三号(16pt) centered, "摘 要" 黑体三号(16pt) centered
+% Body 宋体小四(12pt) fixed 20pt, 2-char indent, 400-600 chars
+% Keywords: 黑体小四, content 宋体小四
+$if(abstract-zh)$
+\cleardoublepage
+\begin{center}
+{\heiti\zihao{3} $if(title)$$title$$endif$ \par}
+\vspace{20pt}
+{\heiti\zihao{3} 摘\ \ 要 \par}
+\end{center}
+\vspace{20pt}
+$abstract-zh$
+
+\vspace{20pt}
+\noindent{\heiti\zihao{-4} 关键词：}{\songti\zihao{-4} $if(keywords-zh)$$keywords-zh$$endif$}
+$endif$
+
+% ===== English Abstract =====
+% Spec: Title ALL CAPS TNR 三号(16pt) bold centered
+% "ABSTRACT" 三号(16pt) bold centered
+% Body TNR 小四(12pt) fixed 20pt, 4-char indent per paragraph
+% "KEYWORDS" bold, left-aligned, no indent
+$if(abstract-en)$
+\cleardoublepage
+\begin{center}
+{\bfseries\zihao{3} \MakeUppercase{$if(title-en)$$title-en$$else$$title$$endif$} \par}
+\vspace{20pt}
+{\bfseries\zihao{3} ABSTRACT \par}
+\end{center}
+\vspace{20pt}
+$abstract-en$
+
+\vspace{20pt}
+\noindent{\bfseries KEYWORDS: } $if(keywords-en)$$keywords-en$$endif$
+$endif$
+
+% ===== Table of Contents =====
+% Spec: "目 录" 三号黑体(16pt) centered, content 小四(12pt), 1.25x spacing
+% Secondary headings indent 2 chars, tertiary 4 chars
+\cleardoublepage
+{
+\renewcommand{\baselinestretch}{1.25}
+\tableofcontents
+}
+
+% ===== Main Body: Double-sided, Arabic numerals =====
+\cleardoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\pagestyle{fancy}
+
+$body$
+
+$if(nocite-ids)$
+\nocite{$for(nocite-ids)$$it$$sep$, $endfor$}
+$endif$
+
+% ===== References =====
+$if(bibliography)$
+\clearpage
+$bibliography$
+$endif$
+
+% ===== Acknowledgements =====
+% Spec: 300-600 chars, sincere and concise
+$if(acknowledgements)$
+\clearpage
+\chapter*{致谢}
+\addcontentsline{toc}{chapter}{致谢}
+$acknowledgements$
+$endif$
+
+\end{document}

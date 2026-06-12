@@ -68,7 +68,7 @@ Slash commands (14) — light modes pin sonnet in frontmatter; the three heavy m
   /ars-revision          sonnet  Revised draft + R&R responses
   /ars-abstract          sonnet  Bilingual abstract + keywords
   /ars-lit-review        sonnet  Annotated bibliography in paper format
-  /ars-format-convert    sonnet  Convert paper between LaTeX / DOCX / PDF / Markdown; audit Chinese thesis format
+  /ars-format-convert    sonnet  Convert paper between LaTeX / DOCX / PDF / Markdown; audit or export Chinese thesis templates
   /ars-citation-check    sonnet  Citation error report; GB/T 7714 thesis citation checks
   /ars-disclosure        sonnet  Venue-specific AI-usage disclosure statement
   /ars-mark-read         sonnet  Record human-read signal for one or more citation keys

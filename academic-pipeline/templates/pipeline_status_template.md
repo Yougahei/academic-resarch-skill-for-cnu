@@ -47,6 +47,7 @@ This template defines the output format for the Progress Dashboard. Switch betwe
 |   [{icon}] Revised Draft                |
 |   [{icon}] Response to Reviewers        |
 |   [{icon}] Final Paper                  |
+|   [{icon}] CNU Formatted DOCX + Report  |
 +-----------------------------------------+
 | Revision History:                       |
 |   {revision_history}                    |
