@@ -141,6 +141,10 @@
 % ===== Pandoc Compatibility =====
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \providecommand{\pandocbounded}[1]{#1}
+% Pandoc longtable uses \LTcaptype{none} for unnumbered tables
+\expandafter\ifx\csname c@none\endcsname\relax
+  \newcounter{none}
+\fi
 
 $if(csl-refs)$
 \newlength{\cslhangindent}
