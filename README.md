@@ -110,13 +110,6 @@ Windows 用户注意：系统自带宋体、黑体、楷体、隶书，无需额
 /plugin install acdemic-resarch-skill-for-CNU
 ```
 
-### Codex / Claude Code 共用（推荐）
-
-```bash
-skillshare install https://github.com/Yougahei/acdemic-resarch-skill-for-CNU.git --all
-skillshare sync --all
-```
-
 ### 手动克隆（macOS / Linux）
 
 ```bash
