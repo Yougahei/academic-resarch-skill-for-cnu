@@ -159,6 +159,12 @@ def write_report(
             "Open the generated DOCX in Word/WPS/LibreOffice, select all, "
             "refresh fields, then inspect the table of contents, page numbers, "
             "captions, headers, and final pagination.\n"
+            "\nHeaders, footers, page numbers, and TOC were added by the "
+            "auto post-processing step (scripts/postprocess_chinese_thesis_docx.py).\n"
+            "If they appear incorrect, open the DOCX and manually adjust:\n"
+            "  - Headers: 广西大学本科毕业论文 (left) + title (right), 隶书 小四号\n"
+            "  - Footers: Roman numerals (front matter), Arabic (body)\n"
+            "  - TOC: Right-click > Update Field > Update entire table\n"
         )
     report_path.write_text(
         "\n".join(
@@ -222,6 +228,22 @@ def export_once(args: argparse.Namespace, output_format: str) -> Path:
         citeproc=not args.no_citeproc,
     )
     subprocess.run(command, check=True, env=build_tool_env())
+
+    # Post-process DOCX to add headers, footers, TOC (Issue #13)
+    if output_format == "docx":
+        try:
+            sys.path.insert(0, str(ROOT))
+            from scripts.postprocess_chinese_thesis_docx import postprocess
+
+            postprocess(
+                input_docx=output_path,
+                output_docx=output_path,
+                profile=profile.id,
+            )
+        except Exception as exc:
+            print(f"WARNING: DOCX post-processing failed: {exc}", file=sys.stderr)
+            print("The raw Pandoc DOCX was saved; you can re-run post-processing manually.", file=sys.stderr)
+
     if args.report:
         report = Path(args.report).resolve()
     else:

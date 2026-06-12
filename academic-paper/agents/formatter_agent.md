@@ -274,6 +274,23 @@ Built-in fallback templates:
 3. If the user explicitly selects Sichuan University master/doctoral dissertation and no official template is supplied, use `templates/chinese_thesis_sichuan_grad_template.tex`.
 4. If the school is mainland Chinese but not covered by a built-in profile, use the Mainland China University Thesis Fallback from `chinese_higher_education_thesis_format.md` and ask the user to confirm assumptions.
 
+### MANDATORY: Profile Prompt (Issue #12)
+
+When the user requests any output format (DOCX, PDF, LaTeX) and the paper content is a Chinese university thesis, you MUST pause BEFORE generating output and ask the user to select a profile.
+
+Present the available profiles as:
+
+```
+Available Chinese University Thesis Profiles:
+1. guangxi-undergrad  — 广西大学本科毕业论文/设计
+2. sichuan-grad       — 四川大学硕士/博士学位论文
+3. mainland-fallback  — 大陆高校通用回退模板
+
+Which profile should I use? (Enter number or name)
+```
+
+Do NOT proceed to generate output until the user has selected a profile or explicitly told you to use the fallback. There is no default — always ask first.
+
 ### Output Behavior
 
 - LaTeX/PDF: generate through Pandoc + XeLaTeX with the selected `.tex` template.
