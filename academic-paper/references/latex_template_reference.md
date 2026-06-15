@@ -368,6 +368,12 @@ If a user-provided official template conflicts with a built-in profile, surface 
 | Guangxi University Undergraduate Thesis/Design | `templates/docx/guangxi_undergrad_reference.docx` | Undergraduate DOCX fallback when no official Word template is supplied |
 | Sichuan University Master/Doctoral Dissertation | `templates/docx/sichuan_grad_reference.docx` | Graduate DOCX fallback when no official Word template is supplied |
 
+### Built-In DOCX Cover Files
+
+| Profile | Cover DOCX | Intended Use |
+|---------|------------|--------------|
+| Guangxi University Undergraduate Thesis | `templates/docx/covers/guangxi_undergrad_thesis_cover.docx` | Official first-page undergraduate thesis cover inserted during DOCX post-processing |
+
 ### Required Engine And Citation Style
 
 - Compile with XeLaTeX.
@@ -409,14 +415,28 @@ pandoc paper.md -o paper.tex \
 
 ### Markdown -> Chinese Thesis DOCX
 
-DOCX output remains the original Pandoc mechanism. If the user provides an official Word template, use it as `--reference-doc`. If no official Word template is available, produce DOCX with the closest available reference document and mark final visual checks as required in Word/WPS/LibreOffice.
+DOCX output keeps the original Pandoc `--reference-doc` style mechanism and then applies profile-specific post-processing. If the selected profile has a built-in cover, or the user provides `--cover-docx`, the cover is inserted as the first page before front matter. If the user provides an official Word template, use it as `--reference-doc`; if they provide an official cover, use it as `--cover-docx`. If no official Word template is available, produce DOCX with the closest available reference document and mark final visual checks as required in Word/WPS/LibreOffice.
+
+Mainland Chinese thesis export requires bilingual front matter before formatting. Provide these fields in Markdown frontmatter, or include equivalent `## 摘要` and `## ABSTRACT` sections that the exporter can extract:
+
+```yaml
+title: ...
+title-en: ...
+abstract-zh: ...
+keywords-zh: ...
+abstract-en: ...
+keywords-en: ...
+```
+
+The exporter treats the first Markdown H1 as metadata and removes it from the body, so the title appears on the cover and headers but not as a duplicate body title before Chapter 1.
 
 ```bash
-pandoc paper.md -o paper.docx \
-  --reference-doc=school_official_reference.docx \
-  --citeproc \
-  --bibliography=references.bib \
-  --csl=chinese-gb7714-2005-numeric.csl
+python3 scripts/export_chinese_thesis.py \
+  --input paper.md \
+  --profile guangxi-undergrad \
+  --format docx \
+  --output final.docx \
+  --cover-docx school_official_cover.docx
 ```
 
 Student-facing wrapper:

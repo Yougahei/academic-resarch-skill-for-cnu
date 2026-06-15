@@ -266,19 +266,51 @@ Built-in fallback templates:
 - `templates/docx/mainland_fallback_reference.docx`
 - `templates/docx/guangxi_undergrad_reference.docx`
 - `templates/docx/sichuan_grad_reference.docx`
+- `templates/docx/covers/guangxi_undergrad_thesis_cover.docx`
 
 ### Template Selection Rules
 
-1. If the user supplies an official school `.tex`, `.docx`, or formatting document, use that as the controlling template/reference.
-2. If the user explicitly selects Guangxi University undergraduate thesis/design and no official template is supplied, use `templates/chinese_thesis_guangxi_undergrad_template.tex`.
+1. If the user supplies an official school `.tex`, `.docx`, cover template, or formatting document, use that as the controlling template/reference.
+2. If the user explicitly selects Guangxi University undergraduate thesis/design and no official template is supplied, use `templates/chinese_thesis_guangxi_undergrad_template.tex`; for DOCX undergraduate thesis output, also use `templates/docx/covers/guangxi_undergrad_thesis_cover.docx`.
 3. If the user explicitly selects Sichuan University master/doctoral dissertation and no official template is supplied, use `templates/chinese_thesis_sichuan_grad_template.tex`.
 4. If the school is mainland Chinese but not covered by a built-in profile, use the Mainland China University Thesis Fallback from `chinese_higher_education_thesis_format.md` and ask the user to confirm assumptions.
+
+### MANDATORY: Profile And Cover Prompt (Issue #15)
+
+When the user requests any output format (DOCX, PDF, LaTeX) and the paper content is a Chinese university thesis, you MUST pause BEFORE generating output and ask the user to select a profile.
+
+Present the available profiles as:
+
+```
+Available Chinese University Thesis Profiles:
+1. guangxi-undergrad  — 广西大学本科毕业论文/设计
+2. sichuan-grad       — 四川大学硕士/博士学位论文
+3. mainland-fallback  — 大陆高校通用回退模板
+
+Which profile should I use? (Enter number or name)
+```
+
+Also ask whether the user has an official school/college cover template. If they provide one, pass it through as `--cover-docx` for DOCX export.
+
+If the user selects `guangxi-undergrad`, ask whether the artifact is:
+
+```
+1. 本科毕业论文
+2. 本科毕业设计
+```
+
+For now, the built-in DOCX cover supports `本科毕业论文`. If the user selects `本科毕业设计` and does not provide an official cover, report that the design cover is not yet built in and ask for the official cover file or confirmation to proceed without a built-in design cover.
+
+Do NOT proceed to generate output until the user has selected a profile or explicitly told you to use the fallback. There is no default — always ask first.
 
 ### Output Behavior
 
 - LaTeX/PDF: generate through Pandoc + XeLaTeX with the selected `.tex` template.
-- DOCX: preserve the existing Pandoc `--reference-doc` mechanism. Use the user's official Word template when available; otherwise use the built-in profile reference DOCX.
+- DOCX: preserve the existing Pandoc `--reference-doc` mechanism for styles. Use the selected/user-provided cover DOCX as a first-page cover during post-processing when available.
 - Student-facing export: when a concrete artifact is requested, use `scripts/export_chinese_thesis.py` to select the profile and call Pandoc consistently.
+- Cover fields: prefer Markdown frontmatter (`title`, `college`, `major`, `class-name`, `student-id`, `author`, `advisor`, `date`, `paper-type`), fall back to the first H1 for `title`, and leave unknown student fields blank.
+- Abstract fields: mainland Chinese thesis export requires existing `abstract-zh`, `keywords-zh`, `abstract-en`, and `keywords-en` metadata, or equivalent `## 摘要` / `## ABSTRACT` blocks in the draft. If any are missing, stop and route back to Phase 5b / `abstract_bilingual_agent`; do not invent abstract text in Phase 7.
+- Front matter order: DOCX output must render cover page -> Chinese abstract page -> English abstract page -> table of contents -> Chapter 1. The initial Markdown H1 is treated as metadata/cover title and removed from the body so the title is not repeated after the cover.
 - Citations: use GB/T 7714 CSL for mainland Chinese university fallback unless the user or school specifies another style.
 - Do not treat the Taiwan-oriented APA 7 Chinese citation guide as the mainland Chinese university default.
 
