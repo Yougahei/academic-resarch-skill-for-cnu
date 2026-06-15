@@ -12,6 +12,7 @@ import scripts.export_chinese_thesis as export
 from scripts.postprocess_chinese_thesis_docx import (
     _add_section_breaks_and_page_breaks,
     _format_figure_captions,
+    _format_table_captions_and_content,
     _is_chapter_heading,
     _is_figure_table,
     _paragraph_text,
@@ -509,6 +510,141 @@ def test_add_section_breaks_toc_entries_skipped(tmp_path: Path) -> None:
     # TOC entry should NOT be detected as chapter heading
     assert not _has_page_break_before(p_ch1), "first chapter still no break"
     assert _has_page_break_before(p_ch2), "chapter 2 must get pageBreakBefore"
+
+
+# ---------------------------------------------------------------------------
+# Table caption and content formatting tests
+# ---------------------------------------------------------------------------
+
+
+def _add_table_with_caption(doc: Document, caption_text: str, rows: int = 3) -> None:
+    """Add a TableCaption paragraph + table to a Document."""
+    cap_para = doc.add_paragraph(caption_text)
+    pPr = cap_para._element.find(qn("w:pPr"))
+    if pPr is None:
+        pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+        cap_para._element.insert(0, pPr)
+    pPr.append(parse_xml(f'<w:pStyle {nsdecls("w")} w:val="TableCaption"/>'))
+
+    table = doc.add_table(rows=rows, cols=3)
+    table.cell(0, 0).text = "列1"
+    table.cell(0, 1).text = "列2"
+    table.cell(0, 2).text = "列3"
+    for r in range(1, rows):
+        table.cell(r, 0).text = f"数据{r}-1"
+        table.cell(r, 1).text = f"数据{r}-2"
+
+
+def test_format_table_captions_and_content_basic() -> None:
+    doc = Document()
+    doc.add_paragraph("正文内容")
+    _add_table_with_caption(doc, "表1：实验数据对比")
+    doc.add_paragraph("第1章 绪论")
+
+    _format_table_captions_and_content(doc)
+
+    # Find the TableCaption paragraph and check formatting
+    caption_elem = None
+    for elem in doc.element.body:
+        if elem.tag != qn("w:p"):
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is not None:
+            pStyle = pPr.find(qn("w:pStyle"))
+            if pStyle is not None and pStyle.get(qn("w:val")) == "TableCaption":
+                caption_elem = elem
+                break
+
+    assert caption_elem is not None, "TableCaption paragraph not found"
+    cap_pPr = caption_elem.find(qn("w:pPr"))
+    jc = cap_pPr.find(qn("w:jc"))
+    assert jc is not None and jc.get(qn("w:val")) == "center", "caption should be centered"
+    for run in caption_elem.findall(qn("w:r")):
+        rPr = run.find(qn("w:rPr"))
+        assert rPr is not None and rPr.find(qn("w:b")) is not None, "caption should be bold"
+        sz = rPr.find(qn("w:sz"))
+        assert sz is not None and sz.get(qn("w:val")) == "21", "caption font size should be 21"
+
+
+def test_format_table_captions_and_content_spacing() -> None:
+    doc = Document()
+    doc.add_paragraph("正文内容")
+    _add_table_with_caption(doc, "表1：实验数据对比")
+    doc.add_paragraph("第1章 绪论")
+
+    original_count = len([e for e in doc.element.body if e.tag == qn("w:p")])
+    _format_table_captions_and_content(doc)
+
+    new_count = len([e for e in doc.element.body if e.tag == qn("w:p")])
+    assert new_count == original_count + 2, "blank lines before caption and after table"
+
+
+def test_format_table_captions_and_content_cell_format() -> None:
+    doc = Document()
+    doc.add_paragraph("正文")
+    _add_table_with_caption(doc, "表1：测试")
+
+    _format_table_captions_and_content(doc)
+
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    pPr = para._element.find(qn("w:pPr"))
+                    if pPr is not None:
+                        ind = pPr.find(qn("w:ind"))
+                        if ind is not None:
+                            flc = ind.get(qn("w:firstLineChars"), "not-set")
+                            assert flc == "0", f"firstLineChars should be 0, got {flc}"
+                    for run in para.runs:
+                        rPr = run._element.find(qn("w:rPr"))
+                        if rPr is not None:
+                            rFonts = rPr.find(qn("w:rFonts"))
+                            if rFonts is not None:
+                                ea = rFonts.get(qn("w:eastAsia"))
+                                if ea:
+                                    assert ea == "宋体", f"cell font should be 宋体, got {ea}"
+
+
+def test_format_table_captions_and_content_multiple() -> None:
+    doc = Document()
+    doc.add_paragraph("正文")
+    _add_table_with_caption(doc, "表1：数据1")
+    _add_table_with_caption(doc, "表2：数据2")
+
+    _format_table_captions_and_content(doc)
+
+    caption_count = 0
+    for elem in doc.element.body:
+        if elem.tag != qn("w:p"):
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is not None:
+            pStyle = pPr.find(qn("w:pStyle"))
+            if pStyle is not None and pStyle.get(qn("w:val")) == "TableCaption":
+                cap_pPr = elem.find(qn("w:pPr"))
+                jc = cap_pPr.find(qn("w:jc"))
+                assert jc is not None and jc.get(qn("w:val")) == "center", \
+                    f"caption {caption_count + 1} should be centered"
+                caption_count += 1
+    assert caption_count == 2, "both table captions should be formatted"
+
+
+def test_format_table_captions_and_content_no_tables() -> None:
+    doc = Document()
+    doc.add_paragraph("只有正文，没有表格")
+
+    # Must not crash
+    _format_table_captions_and_content(doc)
+
+
+def test_format_table_captions_and_content_no_caption() -> None:
+    doc = Document()
+    doc.add_paragraph("正文")
+    doc.add_table(rows=2, cols=2)  # Table without TableCaption
+
+    # Must not crash
+    _format_table_captions_and_content(doc)
 
 
 # ---------------------------------------------------------------------------
