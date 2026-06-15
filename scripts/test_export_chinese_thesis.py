@@ -87,6 +87,88 @@ def test_extract_cover_fields_uses_frontmatter_and_h1_fallback(tmp_path: Path) -
     assert fields["paper-type"] == "本科毕业论文"
 
 
+def test_prepare_markdown_uses_frontmatter_abstracts_and_removes_h1(tmp_path: Path) -> None:
+    paper = tmp_path / "paper.md"
+    paper.write_text(
+        "\n".join(
+            [
+                "---",
+                "title: 元数据标题",
+                "title-en: Metadata Title",
+                "abstract-zh: 中文摘要内容。",
+                "keywords-zh: 关键词一；关键词二",
+                "abstract-en: English abstract content.",
+                "keywords-en: keyword one; keyword two",
+                "---",
+                "# 正文里不应重复的标题",
+                "",
+                "## 第1章 绪论",
+                "正文内容",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    prepared = export.prepare_markdown_for_export(paper, tmp_path)
+    normalized = prepared.path.read_text(encoding="utf-8")
+
+    assert prepared.metadata["title"] == "元数据标题"
+    assert prepared.metadata["abstract-zh"] == "中文摘要内容。"
+    assert "# 正文里不应重复的标题" not in normalized
+    assert "## 第1章 绪论" in normalized
+
+
+def test_prepare_markdown_extracts_inline_abstract_blocks(tmp_path: Path) -> None:
+    paper = tmp_path / "paper.md"
+    paper.write_text(
+        "\n".join(
+            [
+                "# 论文题目",
+                "",
+                "## 摘要",
+                "中文摘要第一段。",
+                "",
+                "**关键词**：本体；大模型",
+                "",
+                "## ABSTRACT",
+                "English abstract paragraph.",
+                "",
+                "Keywords: ontology; LLM",
+                "",
+                "## 第1章 绪论",
+                "正文内容",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    prepared = export.prepare_markdown_for_export(paper, tmp_path)
+    normalized = prepared.path.read_text(encoding="utf-8")
+
+    assert prepared.metadata["title"] == "论文题目"
+    assert prepared.metadata["abstract-zh"] == "中文摘要第一段。"
+    assert prepared.metadata["keywords-zh"] == "本体；大模型"
+    assert prepared.metadata["abstract-en"] == "English abstract paragraph."
+    assert prepared.metadata["keywords-en"] == "ontology; LLM"
+    assert "## 摘要" not in normalized
+    assert "## ABSTRACT" not in normalized
+    assert "# 论文题目" not in normalized
+    assert "## 第1章 绪论" in normalized
+
+
+def test_validate_abstract_metadata_requires_bilingual_abstracts() -> None:
+    try:
+        export.validate_abstract_metadata({"abstract-zh": "中文摘要"})
+    except ValueError as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Expected missing abstract metadata to fail")
+
+    assert "abstract-en" in message
+    assert "keywords-zh" in message
+    assert "Run the abstract generation flow first" in message
+
+
 def test_build_pandoc_args_pdf_uses_tex_template(tmp_path: Path) -> None:
     profile = export.PROFILES["sichuan-grad"]
     args = export.build_pandoc_args(
@@ -106,6 +188,14 @@ def _write_minimal_generated_docx(path: Path, include_toc: bool = True) -> None:
     doc = Document()
     if include_toc:
         doc.add_paragraph("目  录")
+    doc.add_paragraph("第1章 绪论")
+    doc.add_paragraph("正文内容")
+    doc.save(path)
+
+
+def _write_generated_docx_with_pandoc_title(path: Path, title: str) -> None:
+    doc = Document()
+    doc.add_paragraph(title)
     doc.add_paragraph("第1章 绪论")
     doc.add_paragraph("正文内容")
     doc.save(path)
@@ -152,6 +242,39 @@ def test_postprocess_inserts_guangxi_cover_before_toc(tmp_path: Path) -> None:
     assert "管理学院" in all_text
     assert "20260001" in all_text
     assert "二〇二六年六月" in all_text
+
+
+def test_postprocess_inserts_abstract_pages_between_cover_and_toc(tmp_path: Path) -> None:
+    input_docx = tmp_path / "input.docx"
+    output_docx = tmp_path / "output.docx"
+    _write_generated_docx_with_pandoc_title(input_docx, "封面标题")
+    profile = export.PROFILES["guangxi-undergrad"]
+    assert profile.cover_docx is not None
+
+    postprocess(
+        input_docx=input_docx,
+        output_docx=output_docx,
+        profile=profile.id,
+        cover_docx=profile.cover_docx,
+        cover_fields={"title": "封面标题"},
+        abstract_fields={
+            "abstract-zh": "中文摘要内容。",
+            "keywords-zh": "本体；大模型",
+            "abstract-en": "English abstract content.",
+            "keywords-en": "ontology; LLM",
+        },
+    )
+
+    doc = Document(str(output_docx))
+    paragraph_texts = [para.text for para in doc.paragraphs]
+    assert paragraph_texts.index("本科毕业论文") < paragraph_texts.index("摘要")
+    assert paragraph_texts.index("摘要") < paragraph_texts.index("ABSTRACT")
+    assert paragraph_texts.index("ABSTRACT") < paragraph_texts.index("目  录")
+    assert paragraph_texts.index("目  录") < paragraph_texts.index("第1章 绪论")
+    assert "封面标题" not in paragraph_texts
+    all_text = _all_docx_text(doc)
+    assert "中文摘要内容。" in all_text
+    assert "English abstract content." in all_text
 
 
 def test_postprocess_adds_missing_toc_after_cover(tmp_path: Path) -> None:

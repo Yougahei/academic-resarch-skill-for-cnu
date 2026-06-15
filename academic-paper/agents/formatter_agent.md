@@ -309,6 +309,8 @@ Do NOT proceed to generate output until the user has selected a profile or expli
 - DOCX: preserve the existing Pandoc `--reference-doc` mechanism for styles. Use the selected/user-provided cover DOCX as a first-page cover during post-processing when available.
 - Student-facing export: when a concrete artifact is requested, use `scripts/export_chinese_thesis.py` to select the profile and call Pandoc consistently.
 - Cover fields: prefer Markdown frontmatter (`title`, `college`, `major`, `class-name`, `student-id`, `author`, `advisor`, `date`, `paper-type`), fall back to the first H1 for `title`, and leave unknown student fields blank.
+- Abstract fields: mainland Chinese thesis export requires existing `abstract-zh`, `keywords-zh`, `abstract-en`, and `keywords-en` metadata, or equivalent `## 摘要` / `## ABSTRACT` blocks in the draft. If any are missing, stop and route back to Phase 5b / `abstract_bilingual_agent`; do not invent abstract text in Phase 7.
+- Front matter order: DOCX output must render cover page -> Chinese abstract page -> English abstract page -> table of contents -> Chapter 1. The initial Markdown H1 is treated as metadata/cover title and removed from the body so the title is not repeated after the cover.
 - Citations: use GB/T 7714 CSL for mainland Chinese university fallback unless the user or school specifies another style.
 - Do not treat the Taiwan-oriented APA 7 Chinese citation guide as the mainland Chinese university default.
 

@@ -12,6 +12,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -73,6 +74,29 @@ COVER_FIELD_KEYS: tuple[str, ...] = (
     "date",
     "paper-type",
 )
+
+THESIS_METADATA_KEYS: tuple[str, ...] = (
+    "title",
+    "title-en",
+    "abstract-zh",
+    "keywords-zh",
+    "abstract-en",
+    "keywords-en",
+)
+
+REQUIRED_ABSTRACT_KEYS: tuple[str, ...] = (
+    "abstract-zh",
+    "keywords-zh",
+    "abstract-en",
+    "keywords-en",
+)
+
+
+@dataclass(frozen=True)
+class PreparedMarkdown:
+    path: Path
+    metadata: dict[str, str]
+    source_path: Path
 
 
 def find_pandoc() -> str:
@@ -142,12 +166,174 @@ def _parse_simple_frontmatter(text: str) -> dict[str, str]:
         return fields
 
 
+def _frontmatter_bounds(text: str) -> tuple[int, int] | None:
+    if not text.startswith("---"):
+        return None
+    match = re.match(r"^---\s*\n(.*?)\n---\s*(?:\n|$)", text, re.DOTALL)
+    if not match:
+        return None
+    return match.span()
+
+
+def _strip_frontmatter(text: str) -> str:
+    bounds = _frontmatter_bounds(text)
+    if bounds is None:
+        return text
+    return text[bounds[1]:]
+
+
 def _find_markdown_h1(text: str) -> str:
     for line in text.splitlines():
         match = re.match(r"^#\s+(.+?)\s*$", line)
         if match:
             return match.group(1).strip()
     return ""
+
+
+def _strip_initial_h1(text: str) -> str:
+    lines = text.splitlines()
+    output: list[str] = []
+    stripped = False
+    for line in lines:
+        if not stripped and re.match(r"^#\s+.+?\s*$", line):
+            stripped = True
+            continue
+        if stripped and not output and not line.strip():
+            continue
+        output.append(line)
+    return "\n".join(output).strip() + "\n"
+
+
+def _heading_level(line: str) -> int | None:
+    match = re.match(r"^(#{1,6})\s+(.+?)\s*$", line)
+    if not match:
+        return None
+    return len(match.group(1))
+
+
+def _heading_title(line: str) -> str:
+    match = re.match(r"^#{1,6}\s+(.+?)\s*$", line)
+    return match.group(1).strip() if match else ""
+
+
+def _is_zh_abstract_heading(title: str) -> bool:
+    return re.sub(r"\s+", "", title) in {"摘要", "中文摘要"}
+
+
+def _is_en_abstract_heading(title: str) -> bool:
+    return re.sub(r"\s+", "", title).upper() in {"ABSTRACT", "ENGLISHABSTRACT"}
+
+
+def _clean_abstract_block(lines: list[str], *, english: bool) -> tuple[str, str]:
+    abstract_lines: list[str] = []
+    keywords = ""
+    keyword_pattern = (
+        r"^\s*(?:\*\*)?\s*(?:KEYWORDS?|Keywords?)\s*(?:\*\*)?\s*[:：]\s*(.+?)\s*$"
+        if english
+        else r"^\s*(?:\*\*)?\s*关键词\s*(?:\*\*)?\s*[:：]\s*(.+?)\s*$"
+    )
+    for line in lines:
+        match = re.match(keyword_pattern, line)
+        if match:
+            keywords = match.group(1).strip()
+            continue
+        abstract_lines.append(line)
+    abstract = "\n".join(abstract_lines).strip()
+    return abstract, keywords
+
+
+def extract_inline_abstract_blocks(body: str) -> tuple[dict[str, str], str]:
+    """Extract ## 摘要 / ## ABSTRACT blocks and remove them from body markdown."""
+    lines = body.splitlines()
+    metadata: dict[str, str] = {}
+    output: list[str] = []
+    i = 0
+    while i < len(lines):
+        level = _heading_level(lines[i])
+        title = _heading_title(lines[i]) if level else ""
+        is_zh = bool(level and _is_zh_abstract_heading(title))
+        is_en = bool(level and _is_en_abstract_heading(title))
+        if not (is_zh or is_en):
+            output.append(lines[i])
+            i += 1
+            continue
+
+        i += 1
+        block: list[str] = []
+        while i < len(lines):
+            next_level = _heading_level(lines[i])
+            if next_level is not None and next_level <= level:
+                break
+            block.append(lines[i])
+            i += 1
+        abstract, keywords = _clean_abstract_block(block, english=is_en)
+        if is_zh:
+            if abstract:
+                metadata["abstract-zh"] = abstract
+            if keywords:
+                metadata["keywords-zh"] = keywords
+        else:
+            if abstract:
+                metadata["abstract-en"] = abstract
+            if keywords:
+                metadata["keywords-en"] = keywords
+
+    cleaned = "\n".join(output).strip() + "\n"
+    return metadata, cleaned
+
+
+def _yaml_quote(value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def _render_yaml_metadata(metadata: dict[str, str]) -> str:
+    lines = ["---"]
+    for key in THESIS_METADATA_KEYS:
+        value = metadata.get(key, "")
+        if not value:
+            continue
+        if "\n" in value:
+            lines.append(f"{key}: |")
+            lines.extend(f"  {line}" if line else "" for line in value.splitlines())
+        else:
+            lines.append(f"{key}: {_yaml_quote(value)}")
+    lines.append("---")
+    return "\n".join(lines) + "\n\n"
+
+
+def prepare_markdown_for_export(input_path: Path, output_dir: Path) -> PreparedMarkdown:
+    """Normalize thesis metadata and remove title/abstract blocks from body."""
+    text = input_path.read_text(encoding="utf-8")
+    frontmatter = _parse_simple_frontmatter(text)
+    body = _strip_frontmatter(text)
+    title = frontmatter.get("title") or _find_markdown_h1(body)
+    inline_metadata, body_without_abstracts = extract_inline_abstract_blocks(body)
+    metadata = {
+        **inline_metadata,
+        **{key: value for key, value in frontmatter.items() if key in THESIS_METADATA_KEYS},
+    }
+    if title:
+        metadata["title"] = title
+    body_without_title = _strip_initial_h1(body_without_abstracts)
+    normalized = _render_yaml_metadata(metadata) + body_without_title
+    normalized_path = output_dir / f"{input_path.stem}.normalized.md"
+    normalized_path.write_text(normalized, encoding="utf-8")
+    return PreparedMarkdown(
+        path=normalized_path,
+        metadata=metadata,
+        source_path=input_path,
+    )
+
+
+def validate_abstract_metadata(metadata: dict[str, str]) -> None:
+    missing = [key for key in REQUIRED_ABSTRACT_KEYS if not metadata.get(key)]
+    if missing:
+        raise ValueError(
+            "Chinese thesis export requires existing bilingual abstracts before formatting. "
+            f"Missing: {', '.join(missing)}. Run the abstract generation flow first, "
+            "or add abstract-zh, keywords-zh, abstract-en, and keywords-en to the Markdown frontmatter."
+        )
 
 
 def extract_cover_fields(input_path: Path, profile: ExportProfile) -> dict[str, str]:
@@ -159,6 +345,12 @@ def extract_cover_fields(input_path: Path, profile: ExportProfile) -> dict[str, 
         fields["title"] = title
     fields.setdefault("paper-type", profile.paper_type_label)
     return {key: value for key, value in fields.items() if key in COVER_FIELD_KEYS and value}
+
+
+def cover_fields_from_metadata(metadata: dict[str, str], profile: ExportProfile) -> dict[str, str]:
+    fields = {key: value for key, value in metadata.items() if key in COVER_FIELD_KEYS and value}
+    fields.setdefault("paper-type", profile.paper_type_label)
+    return fields
 
 
 def cover_field_status(fields: dict[str, str]) -> tuple[list[str], list[str]]:
@@ -298,68 +490,72 @@ def export_once(args: argparse.Namespace, output_format: str) -> Path:
     if output_path.exists() and not args.force:
         raise FileExistsError(f"Refusing to overwrite existing output: {output_path}")
 
-    pandoc = find_pandoc()
-    reference_docx = Path(args.reference_docx).resolve() if args.reference_docx else None
-    tex_template = Path(args.tex_template).resolve() if args.tex_template else None
-    cover_docx = Path(args.cover_docx).resolve() if args.cover_docx else profile.cover_docx
-    bibliography = Path(args.bibliography).resolve() if args.bibliography else None
-    csl = Path(args.csl).resolve() if args.csl else None
-    cover_fields = extract_cover_fields(input_path, profile)
-
     _check_asset(input_path, "input")
-    if output_format == "docx":
-        _check_asset(reference_docx or profile.reference_docx, "reference DOCX")
-        if cover_docx:
-            _check_asset(cover_docx, "cover DOCX")
-    if output_format in {"pdf", "latex"}:
-        _check_asset(tex_template or profile.tex_template, "LaTeX template")
+    with tempfile.TemporaryDirectory(prefix="ars-thesis-export-") as tmp:
+        prepared = prepare_markdown_for_export(input_path, Path(tmp))
+        validate_abstract_metadata(prepared.metadata)
+        pandoc = find_pandoc()
+        reference_docx = Path(args.reference_docx).resolve() if args.reference_docx else None
+        tex_template = Path(args.tex_template).resolve() if args.tex_template else None
+        cover_docx = Path(args.cover_docx).resolve() if args.cover_docx else profile.cover_docx
+        bibliography = Path(args.bibliography).resolve() if args.bibliography else None
+        csl = Path(args.csl).resolve() if args.csl else None
+        cover_fields = cover_fields_from_metadata(prepared.metadata, profile)
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    command = build_pandoc_args(
-        pandoc=pandoc,
-        input_path=input_path,
-        output_path=output_path,
-        output_format=output_format,
-        profile=profile,
-        reference_docx=reference_docx,
-        tex_template=tex_template,
-        bibliography=bibliography,
-        csl=csl,
-        citeproc=not args.no_citeproc,
-    )
-    subprocess.run(command, check=True, env=build_tool_env())
+        if output_format == "docx":
+            _check_asset(reference_docx or profile.reference_docx, "reference DOCX")
+            if cover_docx:
+                _check_asset(cover_docx, "cover DOCX")
+        if output_format in {"pdf", "latex"}:
+            _check_asset(tex_template or profile.tex_template, "LaTeX template")
 
-    # Post-process DOCX to add headers, footers, TOC (Issue #13)
-    if output_format == "docx":
-        try:
-            sys.path.insert(0, str(ROOT))
-            from scripts.postprocess_chinese_thesis_docx import postprocess
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        command = build_pandoc_args(
+            pandoc=pandoc,
+            input_path=prepared.path,
+            output_path=output_path,
+            output_format=output_format,
+            profile=profile,
+            reference_docx=reference_docx,
+            tex_template=tex_template,
+            bibliography=bibliography,
+            csl=csl,
+            citeproc=not args.no_citeproc,
+        )
+        subprocess.run(command, check=True, env=build_tool_env())
 
-            postprocess(
-                input_docx=output_path,
-                output_docx=output_path,
-                profile=profile.id,
-                cover_docx=cover_docx,
-                cover_fields=cover_fields,
-            )
-        except Exception as exc:
-            print(f"WARNING: DOCX post-processing failed: {exc}", file=sys.stderr)
-            print("The raw Pandoc DOCX was saved; you can re-run post-processing manually.", file=sys.stderr)
+        # Post-process DOCX to add cover, abstracts, headers, footers, and TOC.
+        if output_format == "docx":
+            try:
+                sys.path.insert(0, str(ROOT))
+                from scripts.postprocess_chinese_thesis_docx import postprocess
 
-    if args.report:
-        report = Path(args.report).resolve()
-    else:
-        report = output_path.with_suffix(output_path.suffix + ".format_report.md")
-    write_report(
-        report_path=report,
-        input_path=input_path,
-        output_path=output_path,
-        output_format=output_format,
-        profile=profile,
-        command=command,
-        cover_docx=cover_docx if output_format == "docx" else None,
-        cover_fields=cover_fields if output_format == "docx" else None,
-    )
+                postprocess(
+                    input_docx=output_path,
+                    output_docx=output_path,
+                    profile=profile.id,
+                    cover_docx=cover_docx,
+                    cover_fields=cover_fields,
+                    abstract_fields=prepared.metadata,
+                )
+            except Exception as exc:
+                print(f"WARNING: DOCX post-processing failed: {exc}", file=sys.stderr)
+                print("The raw Pandoc DOCX was saved; you can re-run post-processing manually.", file=sys.stderr)
+
+        if args.report:
+            report = Path(args.report).resolve()
+        else:
+            report = output_path.with_suffix(output_path.suffix + ".format_report.md")
+        write_report(
+            report_path=report,
+            input_path=input_path,
+            output_path=output_path,
+            output_format=output_format,
+            profile=profile,
+            command=command,
+            cover_docx=cover_docx if output_format == "docx" else None,
+            cover_fields=cover_fields if output_format == "docx" else None,
+        )
     return output_path
 
 
@@ -396,7 +592,7 @@ def main() -> int:
         for output_format in formats:
             output = export_once(args, output_format)
             print(output)
-    except (FileExistsError, FileNotFoundError, RuntimeError, subprocess.CalledProcessError) as exc:
+    except (FileExistsError, FileNotFoundError, RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     return 0
