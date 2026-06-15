@@ -400,7 +400,12 @@ def prepare_markdown_for_export(input_path: Path, output_dir: Path) -> PreparedM
     }
     if title:
         metadata["title"] = title
-    body_without_title = _strip_initial_h1(body_without_abstracts)
+    # Only strip first H1 if it matches the frontmatter title (avoids eating chapter headings)
+    first_h1 = _find_markdown_h1(body_without_abstracts)
+    if first_h1 and title and first_h1.strip() == title.strip():
+        body_without_title = _strip_initial_h1(body_without_abstracts)
+    else:
+        body_without_title = body_without_abstracts
     normalized = _render_yaml_metadata(metadata) + body_without_title
     normalized_path = output_dir / f"{input_path.stem}.normalized.md"
     normalized_path.write_text(normalized, encoding="utf-8")
@@ -492,6 +497,7 @@ def build_pandoc_args(
 
     if citeproc and (bibliography or csl):
         args.append("--citeproc")
+        args.extend(["--reference-location", "section"])
     if bibliography:
         args.extend(["--bibliography", str(bibliography)])
     if csl:

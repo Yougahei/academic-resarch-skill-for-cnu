@@ -33,9 +33,9 @@ PROFILE_HEADER_TEXT: dict[str, str] = {
 }
 
 PROFILE_TOC_TITLE: dict[str, str] = {
-    "mainland-fallback": "目录",
-    "guangxi-undergrad": "目  录",
-    "sichuan-grad": "目  录",
+    "mainland-fallback": "目　录",
+    "guangxi-undergrad": "目　录",
+    "sichuan-grad": "目　录",
 }
 
 # Import PROFILES lazily so the module can be used standalone.
@@ -213,6 +213,7 @@ def _paragraph_xml(
     before: int | None = None,
     after: int | None = None,
     first_line_chars: int | None = None,
+    outline_lvl: int | None = None,
 ) -> str:
     ppr_parts: list[str] = []
     spacing_attrs = ['w:line="400"', 'w:lineRule="exact"']
@@ -225,6 +226,8 @@ def _paragraph_xml(
         ppr_parts.append(f'<w:ind w:firstLineChars="{first_line_chars}"/>')
     if align:
         ppr_parts.append(f'<w:jc w:val="{align}"/>')
+    if outline_lvl is not None:
+        ppr_parts.append(f'<w:outlineLvl w:val="{outline_lvl}"/>')
     rpr = _run_properties_xml(
         bold=bold,
         size=size,
@@ -323,7 +326,7 @@ def _insert_abstract_pages(doc: Document, insert_at: int, abstract_fields: dict[
 
     chunks: list[str] = [
         _blank_line_xml(),
-        _paragraph_xml("摘　要", align="center", bold=True, size=32, east_asia_font="黑体"),
+        _paragraph_xml("摘　要", align="center", bold=True, size=32, east_asia_font="黑体", outline_lvl=1),
         _blank_line_xml(),
     ]
     chunks.extend(
@@ -360,6 +363,7 @@ def _insert_abstract_pages(doc: Document, insert_at: int, abstract_fields: dict[
             size=32,
             east_asia_font="Times New Roman",
             ascii_font="Times New Roman",
+            outline_lvl=1,
         )
     )
     chunks.append(_blank_line_xml())
@@ -857,47 +861,80 @@ def _format_equation_numbers(doc: Document) -> None:
 def _add_toc(doc: Document, toc_title: str) -> None:
     """Add a TOC field after the heading that matches the TOC title.
 
-    Scans for a paragraph whose text matches the TOC title, inserts
-    a TOC field in the next paragraph.
+    Inserts the TOC before the front-matter-to-body section break so that
+    the section break properly starts Chapter 1 on a new page.
+    TOC field shows only Level 1 and Level 2 (backslash o "1-2").
     """
+    body_elem = doc.element.body
+    children = list(body_elem)
+
+    # Find existing TOC heading in document
     toc_heading = None
-    for i, para in enumerate(doc.paragraphs):
+    for para in doc.paragraphs:
         text = para.text.strip()
         if re.sub(r"\s+", "", text) == re.sub(r"\s+", "", toc_title):
             toc_heading = para
             break
 
-    if toc_heading is None:
-        body_elem = doc.element.body
-        insert_idx = 0
-        for i, elem in enumerate(body_elem):
-            if elem.tag != qn("w:p") or _is_toc_paragraph(elem):
-                continue
-            texts = elem.findall(".//" + qn("w:t"))
-            text = "".join(t.text or "" for t in texts).strip()
-            if _is_chapter_heading(text):
-                insert_idx = i
-                break
-        toc_heading_xml = parse_xml(
-            f'<w:p {nsdecls("w")}>'
-            f'  <w:pPr><w:jc w:val="center"/><w:rPr><w:b/><w:sz w:val="32"/></w:rPr></w:pPr>'
-            f'  <w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t>{toc_title}</w:t></w:r>'
-            f"</w:p>"
-        )
-        body_elem.insert(insert_idx, toc_heading_xml)
-        toc_element = toc_heading_xml
-        parent = body_elem
-        idx = insert_idx
-    else:
+    # Find the section-break paragraph that separates front matter from body
+    sect_break_idx = None
+    for i, elem in enumerate(children):
+        if elem.tag != qn("w:p"):
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is not None and pPr.find(qn("w:sectPr")) is not None:
+            sect_break_idx = i
+            break
+
+    # Find first chapter heading (fallback for insert position)
+    first_chap_idx = None
+    for i, elem in enumerate(children):
+        if elem.tag != qn("w:p") or _is_toc_paragraph(elem):
+            continue
+        texts = elem.findall(".//" + qn("w:t"))
+        text = "".join(t.text or "" for t in texts).strip()
+        if _is_chapter_heading(text):
+            first_chap_idx = i
+            break
+
+    if toc_heading is not None:
+        # Existing heading — insert TOC field after it, ensure break after
         toc_element = toc_heading._element
         parent = toc_element.getparent()
         idx = list(parent).index(toc_element)
+    else:
+        # Insert TOC heading before the section break (or before first chapter)
+        insert_at = sect_break_idx if sect_break_idx is not None else (first_chap_idx or 0)
 
+        # Blank line before
+        body_elem.insert(insert_at, parse_xml(_blank_line_xml()))
+        insert_at += 1
+
+        # TOC heading: 黑体 三号(32pt), centered, blank line after in spacing
+        heading_xml = parse_xml(
+            f'<w:p {nsdecls("w")}>'
+            f'  <w:pPr>'
+            f'    <w:jc w:val="center"/>'
+            f'    <w:spacing w:before="400" w:after="400" w:line="400" w:lineRule="exact"/>'
+            f'    <w:rPr><w:rFonts w:eastAsia="黑体" w:ascii="黑体" w:hAnsi="黑体"/>'
+            f'      <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>'
+            f'  </w:pPr>'
+            f'  <w:r><w:rPr><w:rFonts w:eastAsia="黑体" w:ascii="黑体" w:hAnsi="黑体"/>'
+            f'      <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>'
+            f'    <w:t>{toc_title}</w:t></w:r>'
+            f"</w:p>"
+        )
+        body_elem.insert(insert_at, heading_xml)
+        toc_element = heading_xml
+        parent = body_elem
+        idx = insert_at
+
+    # TOC field paragraph (level 1-2 only)
     toc_xml = parse_xml(
         f'<w:p {nsdecls("w")}>'
         f'  <w:r><w:fldChar w:fldCharType="begin"/></w:r>'
         f'  <w:r><w:instrText xml:space="preserve">'
-        f"    TOC \\o \"1-3\" \\h \\z \\u "
+        f"    TOC \\o \"1-2\" \\h \\z \\u "
         f"  </w:instrText></w:r>"
         f'  <w:r><w:fldChar w:fldCharType="separate"/></w:r>'
         f'  <w:r><w:t>[请在Word中右键更新目录]</w:t></w:r>'
@@ -905,6 +942,296 @@ def _add_toc(doc: Document, toc_title: str) -> None:
         f"</w:p>"
     )
     parent.insert(idx + 1, toc_xml)
+
+    # Ensure first chapter has pageBreakBefore (covers the case where TOC was
+    # inserted between the section break and the first chapter heading)
+    if first_chap_idx is not None:
+        first_chap_elem = children[first_chap_idx]
+        pPr = first_chap_elem.find(qn("w:pPr"))
+        if pPr is None:
+            pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+            first_chap_elem.insert(0, pPr)
+        if pPr.find(qn("w:pageBreakBefore")) is None:
+            pPr.append(parse_xml(f'<w:pageBreakBefore {nsdecls("w")}/>'))
+
+
+def _format_toc_entries(doc: Document) -> None:
+    """Add 'toc 1' and 'toc 2' styles so Word generates correctly-formatted TOC entries.
+
+    When the user updates the TOC field in Word, entries use these styles.
+    宋体 小四(12pt), left-aligned, no indent, fixed 20pt line spacing.
+    """
+    TOC_STYLE_XML = {
+        "toc1": (
+            f'<w:style {nsdecls("w")} w:type="paragraph" w:styleId="toc1">'
+            f'  <w:name w:val="toc 1"/>'
+            f'  <w:basedOn w:val="Normal"/>'
+            f'  <w:pPr>'
+            f'    <w:jc w:val="left"/>'
+            f'    <w:spacing w:line="400" w:lineRule="exact"/>'
+            f'  </w:pPr>'
+            f'  <w:rPr>'
+            f'    <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"'
+            f'               w:eastAsia="宋体"/>'
+            f'    <w:sz w:val="24"/><w:szCs w:val="24"/>'
+            f'  </w:rPr>'
+            f'</w:style>'
+        ),
+        "toc2": (
+            f'<w:style {nsdecls("w")} w:type="paragraph" w:styleId="toc2">'
+            f'  <w:name w:val="toc 2"/>'
+            f'  <w:basedOn w:val="Normal"/>'
+            f'  <w:pPr>'
+            f'    <w:jc w:val="left"/>'
+            f'    <w:spacing w:line="400" w:lineRule="exact"/>'
+            f'  </w:pPr>'
+            f'  <w:rPr>'
+            f'    <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"'
+            f'               w:eastAsia="宋体"/>'
+            f'    <w:sz w:val="24"/><w:szCs w:val="24"/>'
+            f'  </w:rPr>'
+            f'</w:style>'
+        ),
+    }
+    styles_elem = doc.styles.element
+    existing_ids = {s.get(qn("w:styleId")) for s in styles_elem}
+    for sid, xml in TOC_STYLE_XML.items():
+        if sid not in existing_ids:
+            styles_elem.append(parse_xml(xml))
+
+    # Also format any existing TOC entry paragraphs (if Pandoc pre-generated them)
+    TOC_STYLES = {"toc 1", "toc 2", "toc 3"}
+    for para in doc.paragraphs:
+        pPr = para._element.find(qn("w:pPr"))
+        if pPr is None:
+            continue
+        pStyle = pPr.find(qn("w:pStyle"))
+        if pStyle is None:
+            continue
+        style = pStyle.get(qn("w:val"))
+        if style not in TOC_STYLES:
+            continue
+        _set_para_alignment(pPr, "left")
+        ind = pPr.find(qn("w:ind"))
+        if ind is not None:
+            pPr.remove(ind)
+        for run in para.runs:
+            _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+                          sz="24", bold=False)
+        _set_para_line_spacing_fixed_20pt(pPr)
+
+
+def _format_bibliography_entries(doc: Document) -> None:
+    """Format Bibliography entries: 宋体 小四(12pt), fixed line spacing."""
+    for para in doc.paragraphs:
+        pPr = para._element.find(qn("w:pPr"))
+        if pPr is None:
+            continue
+        pStyle = pPr.find(qn("w:pStyle"))
+        if pStyle is None:
+            continue
+        if pStyle.get(qn("w:val")) != "Bibliography":
+            continue
+        for run in para.runs:
+            _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+                          sz="24", bold=False)
+        _set_para_line_spacing_fixed_20pt(pPr)
+
+
+def _reorder_bibliography_before_thanks(doc: Document) -> None:
+    """Move Bibliography paragraphs after 致谢 to before 致谢.
+
+    Pandoc citeproc places the reference list at the document end by default.
+    This function moves Bibliography-styled paragraphs to before the 致谢
+    heading (which should follow 参考文献 in the input markdown).
+    """
+    body = doc.element.body
+    children = list(body)
+
+    refs_heading_idx = None
+    thanks_heading_idx = None
+    for i, elem in enumerate(children):
+        if elem.tag != qn("w:p"):
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is None:
+            continue
+        pStyle = pPr.find(qn("w:pStyle"))
+        if pStyle is None:
+            continue
+        style = pStyle.get(qn("w:val"))
+        text = "".join(
+            t.text or "" for t in elem.findall(".//" + qn("w:t"))
+        ).strip()
+        if style == "Heading1":
+            if re.sub(r"\s+", "", text) == "参考文献":
+                refs_heading_idx = i
+            elif re.sub(r"\s+", "", text) == "致谢":
+                thanks_heading_idx = i
+
+    if refs_heading_idx is None or thanks_heading_idx is None:
+        return  # nothing to reorder
+
+    # Collect Bibliography paragraphs that are AFTER 致谢
+    bib_elems = []
+    for elem in children[thanks_heading_idx:]:
+        if elem.tag != qn("w:p"):
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is None:
+            continue
+        pStyle = pPr.find(qn("w:pStyle"))
+        if pStyle is None:
+            continue
+        if pStyle.get(qn("w:val")) == "Bibliography":
+            bib_elems.append(elem)
+
+    if not bib_elems:
+        return
+
+    # Move each Bibliography element to just before 致谢 heading
+    for elem in bib_elems:
+        body.remove(elem)
+        body.insert(children.index(children[thanks_heading_idx]), elem)
+
+
+def _format_headings_and_body(doc: Document) -> None:
+    """Format headings and body paragraphs per Guangxi heading hierarchy.
+
+    Level 1 (Heading1 / 第一章): 黑体 小二(18pt), centered, one blank line before/after
+    Level 2 (Heading2 / 1.1):     黑体 小三(15pt), left-aligned, no extra space
+    Level 3 (Heading3 / 1.1.1):   黑体 四号(14pt), left-aligned, no extra space
+    Level 4 (Heading4 / 1.1.1.1): 黑体 小四(12pt), left-aligned, no extra space
+    Body (Normal/BodyText/FirstParagraph): 宋体 小四(12pt), fixed 20pt, first-line indent 2 chars
+    """
+    HEADING_FMT: dict[str, dict[str, str]] = {
+        "Heading1": {"sz": "36", "align": "center", "before": "400", "after": "400"},
+        "Heading2": {"sz": "30", "align": "left",   "before": "0",   "after": "0"},
+        "Heading3": {"sz": "28", "align": "left",   "before": "0",   "after": "0"},
+        "Heading4": {"sz": "24", "align": "left",   "before": "0",   "after": "0"},
+    }
+    BODY_STYLES = {"Normal", "BodyText", "FirstParagraph"}
+    EXCLUDED_BODY = {"Bibliography", "toc 1", "toc 2", "toc 3",
+                     "Compact", "TableCaption", "ImageCaption",
+                     "CaptionedFigure", "toc"}
+
+    for para in doc.paragraphs:
+        pPr = para._element.find(qn("w:pPr"))
+        if pPr is None:
+            continue
+        pStyle_elem = pPr.find(qn("w:pStyle"))
+        style = pStyle_elem.get(qn("w:val")) if pStyle_elem is not None else ""
+
+        if style in HEADING_FMT:
+            # Special headings (参考文献/致谢) use 黑体 三号(16pt), not 小二(18pt)
+            clean_text = re.sub(r"\s+", "", para.text.strip())
+            if clean_text in ("参考文献", "致谢"):
+                _set_para_spacing(pPr, before="400", after="400")
+                _set_para_alignment(pPr, "center")
+                _set_para_line_spacing_fixed_20pt(pPr)
+                for run in para.runs:
+                    _set_run_font(run, east_asia="黑体", ascii="黑体",
+                                  sz="32", bold=True)
+                continue
+            fmt = HEADING_FMT[style]
+            # --- paragraph properties ---
+            _set_para_spacing(pPr, before=fmt["before"], after=fmt["after"])
+            _set_para_alignment(pPr, fmt["align"])
+            _set_para_line_spacing_fixed_20pt(pPr)
+            # --- run properties ---
+            for run in para.runs:
+                _set_run_font(run, east_asia="黑体", ascii="黑体",
+                              sz=fmt["sz"], bold=True)
+        elif style in BODY_STYLES:
+            if style in EXCLUDED_BODY:
+                continue
+            _set_para_alignment(pPr, "both")
+            _set_para_line_spacing_fixed_20pt(pPr)
+            _set_first_line_indent(pPr, chars=2)
+            for run in para.runs:
+                _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+                              sz="24", bold=False)
+
+
+def _set_para_spacing(pPr, before: str, after: str) -> None:
+    spacing = pPr.find(qn("w:spacing"))
+    if spacing is None:
+        spacing = parse_xml(
+            f'<w:spacing {nsdecls("w")} w:before="{before}" w:after="{after}"/>'
+        )
+        pPr.append(spacing)
+    else:
+        spacing.set(qn("w:before"), before)
+        spacing.set(qn("w:after"), after)
+
+
+def _set_para_alignment(pPr, align: str) -> None:
+    jc = pPr.find(qn("w:jc"))
+    if jc is None:
+        jc = parse_xml(f'<w:jc {nsdecls("w")} w:val="{align}"/>')
+        pPr.append(jc)
+    else:
+        jc.set(qn("w:val"), align)
+
+
+def _set_para_line_spacing_fixed_20pt(pPr) -> None:
+    spacing = pPr.find(qn("w:spacing"))
+    if spacing is None:
+        spacing = parse_xml(
+            f'<w:spacing {nsdecls("w")} w:line="400" w:lineRule="exact"/>'
+        )
+        pPr.append(spacing)
+    else:
+        spacing.set(qn("w:line"), "400")
+        spacing.set(qn("w:lineRule"), "exact")
+
+
+def _set_first_line_indent(pPr, chars: int = 2) -> None:
+    ind = pPr.find(qn("w:ind"))
+    if ind is None:
+        ind = parse_xml(
+            f'<w:ind {nsdecls("w")} w:firstLineChars="{chars * 100}"/>'
+        )
+        pPr.append(ind)
+    else:
+        ind.set(qn("w:firstLineChars"), str(chars * 100))
+
+
+def _set_run_font(run, east_asia: str, ascii: str, sz: str, bold: bool) -> None:
+    rPr = run._element.find(qn("w:rPr"))
+    if rPr is None:
+        rPr = parse_xml(f'<w:rPr {nsdecls("w")}></w:rPr>')
+        run._element.insert(0, rPr)
+    rFonts = rPr.find(qn("w:rFonts"))
+    if rFonts is None:
+        rFonts = parse_xml(
+            f'<w:rFonts {nsdecls("w")} '
+            f'  w:eastAsia="{east_asia}" w:ascii="{ascii}" w:hAnsi="{ascii}"/>'
+        )
+        rPr.append(rFonts)
+    else:
+        rFonts.set(qn("w:eastAsia"), east_asia)
+        rFonts.set(qn("w:ascii"), ascii)
+        rFonts.set(qn("w:hAnsi"), ascii)
+    sz_elem = rPr.find(qn("w:sz"))
+    if sz_elem is None:
+        sz_elem = parse_xml(f'<w:sz {nsdecls("w")} w:val="{sz}"/>')
+        rPr.append(sz_elem)
+    else:
+        sz_elem.set(qn("w:val"), sz)
+    szCs = rPr.find(qn("w:szCs"))
+    if szCs is None:
+        szCs = parse_xml(f'<w:szCs {nsdecls("w")} w:val="{sz}"/>')
+        rPr.append(szCs)
+    else:
+        szCs.set(qn("w:val"), sz)
+    b_elem = rPr.find(qn("w:b"))
+    if bold:
+        if b_elem is None:
+            rPr.append(parse_xml(f'<w:b {nsdecls("w")}/>'))
+    else:
+        if b_elem is not None:
+            rPr.remove(b_elem)
 
 
 def _is_chapter_heading(text: str) -> bool:
@@ -1044,29 +1371,112 @@ def _add_section_breaks_and_page_breaks(doc: Document) -> None:
 def _set_section_headers_footers(doc: Document, header_text: str, title: str) -> None:
     """Set headers and footers on each section appropriately.
 
-    Section 0 (front matter): Roman page numbers (upperRoman), no header
-    Subsequent sections (body): Arabic page numbers (decimal), header
+    Section 0 (front matter): no visible page numbers, no header
+    Subsequent sections (body): Arabic page numbers starting from 1, header
     """
     sections = doc.sections
     for i, section in enumerate(sections):
         section.header.is_linked_to_previous = False
         section.footer.is_linked_to_previous = False
 
-        # Set page number format via section properties
-        _set_section_page_number_format(
-            section._sectPr,
-            "upperRoman" if i == 0 else "decimal",
-        )
-
         if i == 0:
-            # Front matter: Roman page numbers, no header
-            _add_page_number_footer(section, is_roman=True)
+            # Front matter: no visible page numbers, no header
             for p in section.header.paragraphs:
                 p.clear()
+            for p in section.footer.paragraphs:
+                p.clear()
+            _set_section_page_number_format(section._sectPr, "upperRoman")
         else:
             # Body: header + Arabic page numbers
             _add_header_to_section(section, header_text, title)
             _add_page_number_footer(section, is_roman=False)
+            _set_section_page_number_format(section._sectPr, "decimal")
+            # Restart numbering at 1 for the first body section
+            if i == 1:
+                pgNumType = section._sectPr.find(qn("w:pgNumType"))
+                if pgNumType is not None:
+                    pgNumType.set(qn("w:start"), "1")
+
+
+def _auto_number_headings(doc: Document) -> None:
+    """Add chapter and multi-level heading numbering to headings.
+
+    Heading1: 第一章, 第二章, ... (Chinese numeral; skip 参考文献/致谢/附录)
+    Heading2: 1.1, 1.2, ...
+    Heading3: 1.1.1, 1.2.1, ...
+    Heading4: 1.1.1.1, ...
+
+    Strips any existing "第N章" or "N.N" prefix before adding fresh numbering.
+    """
+    CHAPTER_NUMERALS = [
+        "零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
+        "十一", "十二", "十三", "十四", "十五",
+    ]
+    EXISTING_CHAP = re.compile(r"^第[一二三四五六七八九十\d]+章\s*")
+    EXISTING_SEC = re.compile(r"^(\d+\.)*\d+\s+")
+    NO_NUMBER = {"参考文献", "致谢"}
+
+    chap_counter = 0
+    # [section, subsection, subsubsection] counters within current chapter
+    sec = [0, 0, 0]
+
+    for para in doc.paragraphs:
+        pPr = para._element.find(qn("w:pPr"))
+        if pPr is None:
+            continue
+        pStyle_elem = pPr.find(qn("w:pStyle"))
+        style = pStyle_elem.get(qn("w:val")) if pStyle_elem is not None else ""
+        text = para.text.strip()
+        if not text:
+            continue
+
+        if style == "Heading1":
+            clean = re.sub(r"\s+", "", text)
+            clean = EXISTING_CHAP.sub("", clean)
+            if clean in NO_NUMBER or clean.startswith("附录"):
+                continue
+            chap_counter += 1
+            sec = [0, 0, 0]
+            stripped = EXISTING_CHAP.sub("", text).strip()
+            new_text = f"第{CHAPTER_NUMERALS[chap_counter]}章 {stripped}"
+            _replace_para_text(para, new_text)
+
+        elif style == "Heading2" and chap_counter > 0:
+            sec[0] += 1
+            sec[1] = 0
+            sec[2] = 0
+            stripped = EXISTING_SEC.sub("", text).strip()
+            new_text = f"{chap_counter}.{sec[0]} {stripped}"
+            _replace_para_text(para, new_text)
+
+        elif style == "Heading3" and chap_counter > 0:
+            sec[1] += 1
+            sec[2] = 0
+            stripped = EXISTING_SEC.sub("", text).strip()
+            new_text = f"{chap_counter}.{sec[0]}.{sec[1]} {stripped}"
+            _replace_para_text(para, new_text)
+
+        elif style == "Heading4" and chap_counter > 0:
+            sec[2] += 1
+            stripped = EXISTING_SEC.sub("", text).strip()
+            new_text = f"{chap_counter}.{sec[0]}.{sec[1]}.{sec[2]} {stripped}"
+            _replace_para_text(para, new_text)
+
+
+def _replace_para_text(para, new_text: str) -> None:
+    """Replace paragraph text, preserving existing runs for formatting."""
+    runs = para.runs
+    if runs:
+        runs[0].text = new_text
+        for run in runs[1:]:
+            run.text = ""
+    else:
+        rPr = parse_xml(f'<w:rPr {nsdecls("w")}></w:rPr>')
+        run_xml = (
+            f'<w:r {nsdecls("w")}>{rPr}'
+            f'<w:t xml:space="preserve">{escape(new_text)}</w:t></w:r>'
+        )
+        para._element.append(parse_xml(run_xml))
 
 
 def postprocess(
@@ -1099,6 +1509,9 @@ def postprocess(
     if abstract_fields:
         insert_at = _insert_abstract_pages(doc, insert_at, abstract_fields)
 
+    # 0.5 Add chapter/section numbering (第一章, 1.1, 1.1.1, ...) before section breaks
+    _auto_number_headings(doc)
+
     # 1. Add section breaks and chapter page breaks
     _add_section_breaks_and_page_breaks(doc)
 
@@ -1114,11 +1527,23 @@ def postprocess(
     # 2.8 Format equation numbers (right-aligned, sequential numbering)
     _format_equation_numbers(doc)
 
+    # 2.9 Format headings (一级/二级/三级/四级) and body text per Guangxi spec
+    _format_headings_and_body(doc)
+
     # 3. Set headers and footers on each section
     _set_section_headers_footers(doc, header_text, title)
 
     # 4. Add TOC field
     _add_toc(doc, toc_title)
+
+    # 4.5 Format TOC entries (宋体 小四, left-aligned, no indent)
+    _format_toc_entries(doc)
+
+    # 4.6 Move Bibliography entries before 致谢 (Pandoc puts refs at document end)
+    _reorder_bibliography_before_thanks(doc)
+
+    # 4.7 Format Bibliography entries (宋体 小四)
+    _format_bibliography_entries(doc)
 
     # Save
     output_docx.parent.mkdir(parents=True, exist_ok=True)
