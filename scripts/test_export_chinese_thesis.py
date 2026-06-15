@@ -11,8 +11,10 @@ import scripts.build_chinese_reference_docx as build_ref
 import scripts.export_chinese_thesis as export
 from scripts.postprocess_chinese_thesis_docx import (
     _add_section_breaks_and_page_breaks,
+    _format_figure_captions,
     _format_table_captions_and_content,
     _is_chapter_heading,
+    _is_figure_table,
     _paragraph_text,
     postprocess,
 )
@@ -643,3 +645,216 @@ def test_format_table_captions_and_content_no_caption() -> None:
 
     # Must not crash
     _format_table_captions_and_content(doc)
+
+
+# ---------------------------------------------------------------------------
+# Figure caption formatting tests
+# ---------------------------------------------------------------------------
+
+
+def _add_style_to_paragraph(para, style_val: str) -> None:
+    """Set w:pStyle on a paragraph's XML element."""
+    pPr = para._element.find(qn("w:pPr"))
+    if pPr is None:
+        pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+        para._element.insert(0, pPr)
+    existing = pPr.find(qn("w:pStyle"))
+    if existing is not None:
+        pPr.remove(existing)
+    pPr.append(parse_xml(f'<w:pStyle {nsdecls("w")} w:val="{style_val}"/>'))
+
+
+def _write_figure_docx(
+    path: Path,
+    num_figures: int = 1,
+    include_caption: bool = True,
+    include_toc: bool = False,
+) -> None:
+    """Create a minimal DOCX with CaptionedFigure + ImageCaption pairs."""
+    doc = Document()
+    if include_toc:
+        doc.add_paragraph("目  录")
+    doc.add_paragraph("正文内容")
+
+    for i in range(num_figures):
+        fig_para = doc.add_paragraph(f"图{i+1}内容")
+        _add_style_to_paragraph(fig_para, "CaptionedFigure")
+        if include_caption:
+            cap_para = doc.add_paragraph(f"图{i+1} 这是一个图题")
+            _add_style_to_paragraph(cap_para, "ImageCaption")
+
+    doc.add_paragraph("第1章 绪论")
+    doc.add_paragraph("正文内容结束")
+    doc.save(path)
+
+
+def _child_style_vals(doc: Document) -> list[tuple[str, str]]:
+    """Return (text, style_val) for each body paragraph."""
+    result: list[tuple[str, str]] = []
+    for elem in doc.element.body:
+        if elem.tag != qn("w:p"):
+            continue
+        text = _paragraph_text(elem)
+        pPr = elem.find(qn("w:pPr"))
+        style_val = ""
+        if pPr is not None:
+            pStyle = pPr.find(qn("w:pStyle"))
+            if pStyle is not None:
+                style_val = pStyle.get(qn("w:val"), "")
+        result.append((text, style_val))
+    return result
+
+
+def _is_centered(elem) -> bool:
+    pPr = elem.find(qn("w:pPr"))
+    if pPr is None:
+        return False
+    jc = pPr.find(qn("w:jc"))
+    if jc is None:
+        return False
+    return jc.get(qn("w:val")) == "center"
+
+
+def _all_runs_bold(elem) -> bool:
+    for run in elem.findall(qn("w:r")):
+        rPr = run.find(qn("w:rPr"))
+        if rPr is None or rPr.find(qn("w:b")) is None:
+            return False
+    return bool(elem.findall(qn("w:r")))  # False if no runs
+
+
+def _run_font_size(elem) -> int | None:
+    for run in elem.findall(qn("w:r")):
+        rPr = run.find(qn("w:rPr"))
+        if rPr is not None:
+            sz = rPr.find(qn("w:sz"))
+            if sz is not None:
+                return int(sz.get(qn("w:val"), "0"))
+    return None
+
+
+def test_format_figure_captions_basic(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_figure_docx(path)
+    doc = Document(str(path))
+
+    _format_figure_captions(doc)
+
+    # Find the ImageCaption paragraph
+    caption_elem = None
+    for elem in doc.element.body:
+        if elem.tag != qn("w:p"):
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is not None:
+            pStyle = pPr.find(qn("w:pStyle"))
+            if pStyle is not None and pStyle.get(qn("w:val")) == "ImageCaption":
+                caption_elem = elem
+                break
+
+    assert caption_elem is not None, "ImageCaption paragraph not found"
+    assert _is_centered(caption_elem), "caption should be centered"
+    assert _all_runs_bold(caption_elem), "caption should be bold"
+    assert _run_font_size(caption_elem) == 21, "caption font size should be 21 (10.5pt)"
+
+
+def test_format_figure_captions_spacing(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_figure_docx(path, num_figures=1)
+    doc = Document(str(path))
+    original_count = len([e for e in doc.element.body if e.tag == qn("w:p")])
+
+    _format_figure_captions(doc)
+
+    new_count = len([e for e in doc.element.body if e.tag == qn("w:p")])
+    assert new_count == original_count + 2, "blank lines before figure and after caption"
+
+    styles = [s for _, s in _child_style_vals(doc)]
+    cf_idx = styles.index("CaptionedFigure")
+    ic_idx = styles.index("ImageCaption")
+    assert cf_idx > 0, "blank paragraph should exist before CaptionedFigure"
+    assert ic_idx == cf_idx + 1, "ImageCaption should immediately follow CaptionedFigure"
+    # The blank after ImageCaption is at ic_idx + 1 (unstyled paragraph)
+    assert ic_idx + 1 < len(styles), "blank paragraph should exist after ImageCaption"
+
+
+def test_format_figure_captions_multiple(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_figure_docx(path, num_figures=3)
+    doc = Document(str(path))
+
+    _format_figure_captions(doc)
+
+    count = 0
+    for elem in doc.element.body:
+        if elem.tag != qn("w:p"):
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is not None:
+            pStyle = pPr.find(qn("w:pStyle"))
+            if pStyle is not None and pStyle.get(qn("w:val")) == "ImageCaption":
+                assert _is_centered(elem), f"caption {count + 1} should be centered"
+                assert _all_runs_bold(elem), f"caption {count + 1} should be bold"
+                count += 1
+
+    assert count == 3, "all 3 figure captions should be found and formatted"
+
+
+def test_format_figure_captions_no_figures(tmp_path: Path) -> None:
+    doc = Document()
+    doc.add_paragraph("只有正文，没有图")
+    doc.add_paragraph("第1章 绪论")
+
+    # Must not crash
+    _format_figure_captions(doc)
+
+
+def test_format_figure_captions_no_caption_following(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_figure_docx(path, include_caption=False)
+    doc = Document(str(path))
+
+    # Must not crash when CaptionedFigure has no ImageCaption after it
+    _format_figure_captions(doc)
+
+
+def test_is_figure_table_detection() -> None:
+    doc = Document()
+    table = doc.add_table(rows=2, cols=2)
+    # Set FigureTable style on the table
+    tbl = table._tbl
+    tblPr = tbl.find(qn("w:tblPr"))
+    if tblPr is None:
+        tblPr = parse_xml(f'<w:tblPr {nsdecls("w")}></w:tblPr>')
+        tbl.insert(0, tblPr)
+    existing = tblPr.find(qn("w:tblStyle"))
+    if existing is not None:
+        tblPr.remove(existing)
+    tblPr.append(parse_xml(f'<w:tblStyle {nsdecls("w")} w:val="FigureTable"/>'))
+
+    assert _is_figure_table(table), "FigureTable style table should be detected"
+
+
+def test_format_tables_three_line_skips_figure_table(tmp_path: Path) -> None:
+    from scripts.postprocess_chinese_thesis_docx import _format_tables_three_line
+
+    doc = Document()
+    table = doc.add_table(rows=2, cols=2)
+    # Set FigureTable style
+    tbl = table._tbl
+    tblPr = tbl.find(qn("w:tblPr"))
+    if tblPr is None:
+        tblPr = parse_xml(f'<w:tblPr {nsdecls("w")}></w:tblPr>')
+        tbl.insert(0, tblPr)
+    existing = tblPr.find(qn("w:tblStyle"))
+    if existing is not None:
+        tblPr.remove(existing)
+    tblPr.append(parse_xml(f'<w:tblStyle {nsdecls("w")} w:val="FigureTable"/>'))
+
+    _format_tables_three_line(doc)
+
+    # FigureTable should NOT have three-line table borders
+    tblBorders = tblPr.find(qn("w:tblBorders"))
+    if tblBorders is not None:
+        top = tblBorders.find(qn("w:top"))
+        assert top is None or top.get(qn("w:val")) != "single", "FigureTable should not get three-line borders"
