@@ -380,6 +380,121 @@ def _format_tables_three_line(doc: Document) -> None:
                         run.bold = True
 
 
+def _format_table_caption_paragraph(caption_elem) -> None:
+    """Apply Guangxi University formatting to a table caption paragraph."""
+    cap_pPr = caption_elem.find(qn("w:pPr"))
+    if cap_pPr is None:
+        cap_pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+        caption_elem.insert(0, cap_pPr)
+
+    # Center alignment
+    if cap_pPr.find(qn("w:jc")) is None:
+        cap_pPr.append(parse_xml(f'<w:jc {nsdecls("w")} w:val="center"/>'))
+
+    # Fixed 20 pt line spacing (400 twips)
+    spacing = cap_pPr.find(qn("w:spacing"))
+    if spacing is None:
+        cap_pPr.append(
+            parse_xml(f'<w:spacing {nsdecls("w")} w:line="400" w:lineRule="exact"/>')
+        )
+    else:
+        spacing.set(qn("w:line"), "400")
+        spacing.set(qn("w:lineRule"), "exact")
+
+    # Bold + 五号 (10.5pt = 21 half-pts) on all runs
+    for run in caption_elem.findall(qn("w:r")):
+        rPr = run.find(qn("w:rPr"))
+        if rPr is None:
+            rPr = parse_xml(f'<w:rPr {nsdecls("w")}></w:rPr>')
+            run.insert(0, rPr)
+        if rPr.find(qn("w:b")) is None:
+            rPr.append(parse_xml(f'<w:b {nsdecls("w")}/>'))
+        sz = rPr.find(qn("w:sz"))
+        if sz is None:
+            rPr.append(parse_xml(f'<w:sz {nsdecls("w")} w:val="21"/>'))
+        szCs = rPr.find(qn("w:szCs"))
+        if szCs is None:
+            rPr.append(parse_xml(f'<w:szCs {nsdecls("w")} w:val="21"/>'))
+
+
+def _format_table_cell_content(table) -> None:
+    """Set table cell font, line spacing, and remove first-line indent."""
+    for row in table.rows:
+        for cell in row.cells:
+            for para in cell.paragraphs:
+                pPr = para._element.find(qn("w:pPr"))
+                if pPr is not None:
+                    # Remove first-line indent
+                    ind = pPr.find(qn("w:ind"))
+                    if ind is not None:
+                        ind.set(qn("w:firstLineChars"), "0")
+                        ind.set(qn("w:firstLine"), "0")
+                    # Fixed 20 pt line spacing
+                    spacing = pPr.find(qn("w:spacing"))
+                    if spacing is None:
+                        pPr.append(
+                            parse_xml(f'<w:spacing {nsdecls("w")} w:line="400" w:lineRule="exact"/>')
+                        )
+                    else:
+                        spacing.set(qn("w:line"), "400")
+                        spacing.set(qn("w:lineRule"), "exact")
+
+                # Set font on all runs
+                for run in para.runs:
+                    _set_cell_font(run, "宋体", Pt(10.5))
+
+
+def _format_table_captions_and_content(doc: Document) -> None:
+    """Format table captions and cell content per Guangxi University requirements.
+
+    - Caption above table, centered, 五号 (10.5pt) bold, fixed 20 pt line spacing
+    - One blank line before caption and after table
+    - Table content: 五号 (10.5pt) 宋体, no first-line indent
+    """
+    body = doc.element.body
+    children = list(body)
+
+    # Collect (caption_idx, table_idx) pairs for captioned tables
+    pairs: list[tuple[int, int]] = []
+    i = 0
+    while i < len(children):
+        elem = children[i]
+        if elem.tag == qn("w:p"):
+            pPr = elem.find(qn("w:pPr"))
+            if pPr is not None:
+                pStyle = pPr.find(qn("w:pStyle"))
+                if pStyle is not None and pStyle.get(qn("w:val")) == "TableCaption":
+                    if i + 1 < len(children) and children[i + 1].tag == qn("w:tbl"):
+                        pairs.append((i, i + 1))
+                        i += 2
+                        continue
+        i += 1
+
+    # Format cell content for all non-excluded tables
+    for table in doc.tables:
+        if _is_cover_metadata_table(table):
+            continue
+        _format_table_cell_content(table)
+
+    if not pairs:
+        return
+
+    # Process captions in reverse order
+    blank = parse_xml(
+        f'<w:p {nsdecls("w")}>'
+        f'  <w:pPr><w:spacing w:line="400" w:lineRule="exact"/></w:pPr>'
+        f"</w:p>"
+    )
+    for cap_idx, tbl_idx in reversed(pairs):
+        caption_elem = children[cap_idx]
+        _format_table_caption_paragraph(caption_elem)
+
+        # Insert blank before caption
+        body.insert(cap_idx, deepcopy(blank))
+        # Insert blank after table (tbl_idx+1 because cap_idx insert shifted tbl_idx by 1)
+        body.insert(tbl_idx + 1, deepcopy(blank))
+
+
 def _add_toc(doc: Document, toc_title: str) -> None:
     """Add a TOC field after the heading that matches the TOC title.
 
@@ -630,6 +745,9 @@ def postprocess(
 
     # 2. Format all tables as three-line tables (三线表)
     _format_tables_three_line(doc)
+
+    # 2.2 Format table captions and cell content (font, spacing, indent)
+    _format_table_captions_and_content(doc)
 
     # 3. Set headers and footers on each section
     _set_section_headers_footers(doc, header_text, title)
