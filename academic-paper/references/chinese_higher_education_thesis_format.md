@@ -219,13 +219,15 @@ Common binding pattern:
 
 ### Page Setup And Printing
 
-Source: `07.论文审查心得及注意事项.docx` §2.1
+Source: `07.论文审查心得及注意事项.docx` §2.1; user-confirmed Guangxi requirements, 2026-06-15
 
 - Paper: A4 (210 mm × 297 mm).
 - Margins: top 2.54 cm, bottom 2.54 cm, left 2.2 cm, right 2.2 cm.
 - Header distance from top: 2 cm.
 - Footer distance from bottom: 1.75 cm.
 - Overall line spacing: fixed 20 pt unless a specific element requires otherwise.
+- Main body: 宋体 小四 (12pt), fixed 20 pt line spacing, first-line indent two Chinese characters.
+- Undergraduate thesis/design total length: not less than 10,000 Chinese characters.
 - Cover, abstracts, and table of contents: single-sided printing.
 - Main text, references, appendices, and acknowledgements: double-sided printing.
 - Section break after cover (not page break via carriage returns).
@@ -245,59 +247,64 @@ Source: `07.论文审查心得及注意事项.docx` §2.2, §2.3
 
 ### Cover
 
-Source: `07.论文审查心得及注意事项.docx` §3
+Source: `07.论文审查心得及注意事项.docx` §3; user-confirmed Guangxi requirements, 2026-06-15
 
-- Thesis title: 黑体 一号 (26pt), centered.
+- School logo image: approximately 3.2 cm high × 10.6 cm wide.
+- "本科毕业论文": 宋体 小初, bold, centered.
+- Topic label/title line ("课题名称"): 黑体 一号 (26pt).
 - Title max 25 characters; if split across two lines, second line left-aligned with first.
 - Other info (college, major, class, student ID, name, advisor): 宋体 四号 (14pt), centered.
 - Advisor name followed by two spaces then title (e.g., "教授").
 - College and major names use standard full names, not abbreviations.
-- Date: format "二〇二六年五月", uses "〇" not "0" or "O".
+- Date: 宋体 四号 (14pt), centered; format "二〇二六年五月", uses "〇" not "0" or "O".
 - Section break after cover.
 
 ### Chinese Abstract
 
-Source: `07.论文审查心得及注意事项.docx` §4
+Source: `07.论文审查心得及注意事项.docx` §4; user-confirmed Guangxi requirements, 2026-06-15
 
 - Chinese paper title above abstract: 黑体 三号 (16pt), centered, fixed 20 pt line spacing, one line space before/after.
-- "摘 要" (one space between characters): 黑体 三号 (16pt), centered, fixed 20 pt, one line space before/after.
-- One blank line below "摘要" before body text.
+- "摘　要": 黑体 三号 (16pt), centered; one full-width space between characters. If full-width spacing is unavailable, use two half-width spaces.
+- Leave one blank line before and after the abstract heading, separating it from the abstract body.
 - Abstract body: 宋体 小四 (12pt), fixed 20 pt line spacing, first-line indent two Chinese characters.
-- Length: 400–600 Chinese characters.
+- Length: at least 400 Chinese characters; 400–600 Chinese characters recommended.
 - Content structure: purpose (~100 chars), methods (~200 chars), results (~200+ chars), conclusion (~100 chars).
 - Use third-person, objective tone; no first-person pronouns.
+- Printed page number should not appear on the abstract body page, but pagination must be configured so the table of contents records the Chinese abstract from Roman numeral Ⅰ and the main body restarts from Arabic numeral 1.
+- Leave one blank line before the keyword line.
 - "关键词": 黑体 小四 (12pt), left-aligned with two-character indent, on same line as keywords.
 - Keywords: 宋体 小四 (12pt), 3–8 terms (recommended 5), separated by "；", no trailing punctuation.
 - Section break after Chinese abstract.
 
 ### English Abstract
 
-Source: `07.论文审查心得及注意事项.docx` §5
+Source: `07.论文审查心得及注意事项.docx` §5; user-confirmed Guangxi requirements, 2026-06-15
 
 - All English text: Times New Roman.
-- Paper title: ALL CAPS, 三号 (16pt), bold, centered.
-- "ABSTRACT": 三号 (16pt), bold, centered, one blank line above and below.
+- Paper title: centered; capitalize the first letter and all major content words; leave one blank line after the title.
+- "ABSTRACT": all caps, 三号 (16pt), bold, centered; leave one blank line after it.
 - Body: Times New Roman 小四 (12pt), fixed 20 pt line spacing.
 - Each paragraph: four-character-space indent; minimum five-character-space margin on each side.
-- "KEYWORDS" (not "KEY WORDS", all caps, with "S"): bold, left-aligned, no indent.
-- Keywords: first letter capitalized, separated by ";", no trailing punctuation.
+- "Keywords": bold, left-aligned, same size as Chinese abstract keywords.
+- English keywords: not bold, Times New Roman 小四 (12pt), first letter capitalized, separated by semicolons, no trailing punctuation.
 - Section break after English abstract.
 
 ### Table Of Contents
 
-Source: `07.论文审查心得及注意事项.docx` §6
+Source: `07.论文审查心得及注意事项.docx` §6; user-confirmed Guangxi requirements, 2026-06-15
 
-- "目 录" (one space between characters): 黑体 三号 (16pt), centered.
-- Content: 小四号 (12pt), 1.25× line spacing.
-- Secondary headings indent 2 Chinese characters; tertiary headings indent 4 characters.
+- "目　录": 黑体 三号 (16pt), centered, character spacing 3 pt; use one full-width space between characters.
+- Leave one blank line above and below the TOC title.
+- Content: 宋体 小四号 (12pt).
+- Thesis/design TOC generally lists first- and second-level headings only.
+- First- and second-level TOC entries should be left-aligned with no indentation.
 - Page numbers right-aligned.
 - Abstract pages: Roman numeral page numbers. Main body: Arabic page numbers.
-- TOC lists to second-level headings by default; third-level only for substantial results.
 - TOC first page should be odd-numbered (right-hand page after binding).
 
 ### Main Text
 
-Source: `07.论文审查心得及注意事项.docx` §7
+Source: `07.论文审查心得及注意事项.docx` §7; user-confirmed Guangxi requirements, 2026-06-15
 
 - Body: 宋体 小四 (12pt); English/Times New Roman 小四 (12pt).
 - Line spacing: fixed 20 pt throughout.
@@ -306,11 +313,11 @@ Source: `07.论文审查心得及注意事项.docx` §7
 - Results and analysis section should be ≥ 65% of total word count.
 - Each chapter starts on a new page (preferably right-hand).
 - If a chapter end leaves > 1/3 blank page, insert two blank lines before next chapter instead of page break.
-- No automatic numbering — use manual heading numbers.
+- Headings must render with the profile numbering scheme. If source Markdown headings are unnumbered, the export layer should generate the required `第一章` and multilevel section numbering instead of leaving plain unnumbered headings.
 
 ### Heading Hierarchy
 
-Source: `07.论文审查心得及注意事项.docx` §2.5
+Source: `07.论文审查心得及注意事项.docx` §2.5; user-confirmed Guangxi requirements, 2026-06-15
 
 ```text
 第一章 标题
@@ -336,47 +343,71 @@ Source: `07.论文审查心得及注意事项.docx` §2.5
 Source: `07.论文审查心得及注意事项.docx` §8, §9, §10
 
 Figures:
-- Figure caption below figure, centered, 五号 (10.5pt) bold, fixed 20 pt line spacing.
-- English caption: "Fig." + Times New Roman bold (if bilingual).
+- Use sufficient image resolution so all labels and details remain legible.
+- Figure caption below figure, centered; Chinese caption 宋体 五号 (10.5pt), English caption Times New Roman 五号 (10.5pt).
+- Both Chinese and English figure captions are required.
 - One blank line before figure and after figure caption.
 - At least 1.5 lines of body text before any figure/table on a new page.
 - No text box captions; use inline embedded images.
 - Multiple images should be composited or placed in a borderless table.
 - Cite figure before placement; mark source at top-right of caption if applicable.
 - No watermarks, commercial marks, or trial version marks on figures.
+- Keep figure captions on the same page as their figures where possible.
 
 Tables:
-- Table caption above table, centered, 五号 (10.5pt) bold, fixed 20 pt line spacing.
-- English caption: "Tab." + Times New Roman bold (if bilingual).
+- Table caption above table, centered; both Chinese and English table captions are required.
 - One blank line before table caption and after table.
-- Three-line table: 1.5 pt top/bottom rules, 0.5 pt header separator rule.
-- Table content: 五号 (10.5pt) 宋体.
+- Three-line table: top rule above the first row and bottom rule below the last row should be 1 pt.
+- Table content: 宋体 五号 (10.5pt); numbers and English use Times New Roman 五号 (10.5pt).
+- Whole table centered.
 - No first-line indent in table cells.
 - On page break: repeat caption with "续表" suffix.
+- Keep table names on the same page as their tables where possible; if this is impossible, use a continued-table label.
+- Put one half-width space between numbers and units.
 
 Equations:
 - Created with equation editor; do not copy-paste from references.
+- Number equations by chapter.
 - Equation number at right margin on same line.
 - Parameter annotations below equation, either hanging-indent or single-paragraph format.
+- Letter explanations should be italicized.
 - Cite equation before placement.
 - Use Greek letters or Times New Roman for equation text; no Chinese characters inside equations.
+- Chemical formulas/equations must use correct superscript and subscript notation.
+- Parentheses in formulas such as `Ag(I)` must be typed in English/half-width form.
+- All digits and Latin letters in the document should use Times New Roman.
 
 ### References
 
-Source: `07.论文审查心得及注意事项.docx` §11
+Source: `07.论文审查心得及注意事项.docx` §11; user-confirmed Guangxi requirements, 2026-06-15
 
+- "参考文献": 黑体 三号 (16pt), centered, with one blank line above and below.
 - Minimum 40 references; ≥ 2/3 from the last 5 years.
+- Undergraduate design must include at least 2 English references.
+- Undergraduate thesis should include more than 10 English references from the last 3-5 years.
 - Chinese-majority: English ≥ 1/3. English-majority: Chinese ≥ 1/5.
 - Prefer journal articles over patents, books, conference papers, web articles.
-- Format: 著者. 题名[J]. 期刊名称, 出版年, 卷号(期号): 起止页码.
+- Reference entries: hanging indent two Chinese characters; font size and line spacing follow main body requirements.
+- Journal format with volume: 著者. 题名[J]. 期刊名称, 出版年, 卷(期): 起止页码.
+- Journal format without volume: 著者. 题名[J]. 期刊名称, 出版年, (期): 起止页码.
 - Dissertation format: 作者. 篇名[D]. 学校所在城市: 学校名称, 出版年份.
-- Authors ≤ 3: list all. Authors > 3: list first 3 + "，等" (Chinese) or ", et al" (English).
+- Authors ≤ 3: list all.
+- Chinese references with more than 3 authors: keep only the first 3 authors, delete the rest, and add "等".
+- English references with more than 3 authors: keep only the first 3 authors, delete the rest, and add "et al".
 - Chinese and foreign authors: surname first, given name abbreviated.
 - Volume number required; issue number optional if absent.
-- Page numbers required; use "-" for ranges, "," for separate ranges.
+- Page numbers required when available; use "-" for ranges, "," for separate ranges.
+- Some Elsevier journals use an article number instead of page numbers; keep the article number as the article locator.
 - Each reference ends with ".".
 - In-text citation numbers before punctuation (e.g., "[9]。" not "。[9]").
 - Warn: AI-generated hallucinated references must be verified by the author.
+
+### Acknowledgements
+
+Source: `07.论文审查心得及注意事项.docx`; user-confirmed Guangxi requirements, 2026-06-15
+
+- "致　谢": 黑体 三号 (16pt), centered, character spacing 3 pt; use one full-width space between characters.
+- Leave one blank line above and below the acknowledgements heading.
 
 ### Review And Inspection Problem Checklist
 

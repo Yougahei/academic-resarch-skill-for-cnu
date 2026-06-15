@@ -220,6 +220,31 @@ def _all_docx_text(doc: Document) -> str:
     return "\n".join(parts)
 
 
+def _paragraph_spacing_attr(para, attr: str) -> str | None:
+    pPr = para._element.find(qn("w:pPr"))
+    if pPr is None:
+        return None
+    spacing = pPr.find(qn("w:spacing"))
+    if spacing is None:
+        return None
+    return spacing.get(qn(f"w:{attr}"))
+
+
+def _paragraph_first_line_chars(para) -> str | None:
+    pPr = para._element.find(qn("w:pPr"))
+    if pPr is None:
+        return None
+    ind = pPr.find(qn("w:ind"))
+    if ind is None:
+        return None
+    return ind.get(qn("w:firstLineChars"))
+
+
+def _run_has_bold(run) -> bool:
+    rPr = run._element.find(qn("w:rPr"))
+    return rPr is not None and rPr.find(qn("w:b")) is not None
+
+
 def test_postprocess_inserts_guangxi_cover_before_toc(tmp_path: Path) -> None:
     input_docx = tmp_path / "input.docx"
     output_docx = tmp_path / "output.docx"
@@ -269,8 +294,9 @@ def test_postprocess_inserts_abstract_pages_between_cover_and_toc(tmp_path: Path
         cover_docx=profile.cover_docx,
         cover_fields={"title": "封面标题"},
         abstract_fields={
+            "title-en": "the impact of AI on learning engagement",
             "abstract-zh": "中文摘要内容。",
-            "keywords-zh": "本体；大模型",
+            "keywords-zh": "本体；大模型。",
             "abstract-en": "English abstract content.",
             "keywords-en": "ontology; LLM",
         },
@@ -278,14 +304,46 @@ def test_postprocess_inserts_abstract_pages_between_cover_and_toc(tmp_path: Path
 
     doc = Document(str(output_docx))
     paragraph_texts = [para.text for para in doc.paragraphs]
-    assert paragraph_texts.index("本科毕业论文") < paragraph_texts.index("摘要")
-    assert paragraph_texts.index("摘要") < paragraph_texts.index("ABSTRACT")
+    assert paragraph_texts.index("本科毕业论文") < paragraph_texts.index("摘　要")
+    assert paragraph_texts.index("摘　要") < paragraph_texts.index("ABSTRACT")
     assert paragraph_texts.index("ABSTRACT") < paragraph_texts.index("目  录")
     assert paragraph_texts.index("目  录") < paragraph_texts.index("第1章 绪论")
     assert "封面标题" not in paragraph_texts
     all_text = _all_docx_text(doc)
     assert "中文摘要内容。" in all_text
     assert "English abstract content." in all_text
+    assert "本体；大模型。" not in all_text
+    assert "本体；大模型" in all_text
+    assert "The Impact Of AI On Learning Engagement" in all_text
+    assert "Ontology; LLM" in all_text
+
+    zh_heading_idx = paragraph_texts.index("摘　要")
+    assert paragraph_texts[zh_heading_idx - 1] == ""
+    assert paragraph_texts[zh_heading_idx + 1] == ""
+    zh_heading = doc.paragraphs[zh_heading_idx]
+    assert zh_heading.alignment == 1  # WD_ALIGN_PARAGRAPH.CENTER
+    assert _paragraph_spacing_attr(zh_heading, "line") == "400"
+    assert zh_heading.runs[0].text == "摘　要"
+    assert _run_has_bold(zh_heading.runs[0])
+
+    keyword_idx = paragraph_texts.index("关键词：本体；大模型")
+    assert paragraph_texts[keyword_idx - 1] == ""
+    keyword_para = doc.paragraphs[keyword_idx]
+    assert _paragraph_first_line_chars(keyword_para) == "200"
+    assert [run.text for run in keyword_para.runs] == ["关键词：", "本体；大模型"]
+    assert _run_has_bold(keyword_para.runs[0])
+    assert not _run_has_bold(keyword_para.runs[1])
+
+    en_title_idx = paragraph_texts.index("The Impact Of AI On Learning Engagement")
+    assert paragraph_texts[en_title_idx + 1] == ""
+    abstract_idx = paragraph_texts.index("ABSTRACT")
+    assert paragraph_texts[abstract_idx + 1] == ""
+    keywords_idx = paragraph_texts.index("Keywords: Ontology; LLM")
+    assert paragraph_texts[keywords_idx - 1] == ""
+    keywords_para = doc.paragraphs[keywords_idx]
+    assert [run.text for run in keywords_para.runs] == ["Keywords: ", "Ontology; LLM"]
+    assert _run_has_bold(keywords_para.runs[0])
+    assert not _run_has_bold(keywords_para.runs[1])
 
 
 def test_postprocess_adds_missing_toc_after_cover(tmp_path: Path) -> None:
