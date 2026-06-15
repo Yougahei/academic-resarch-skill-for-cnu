@@ -582,6 +582,93 @@ def _format_figure_captions(doc: Document) -> None:
         body.insert(fig_idx, parse_xml(blank))
 
 
+def _format_equation_numbers(doc: Document) -> None:
+    """Add sequential equation numbers at the right margin for display equations.
+
+    Pandoc converts $$...$$ to w:p containing m:oMathPara. This function adds
+    right-aligned equation numbers on the same line via a right tab stop.
+    """
+    body = doc.element.body
+
+    # Read page dimensions from the first sectPr
+    sectPr = body.find(qn("w:sectPr"))
+    if sectPr is None:
+        return
+
+    pgSz = sectPr.find(qn("w:pgSz"))
+    pgMar = sectPr.find(qn("w:pgMar"))
+
+    page_width = 11906  # A4 default in twips
+    left_margin = 1701  # ~3cm default
+    right_margin = 1701
+
+    if pgSz is not None:
+        w = pgSz.get(qn("w:w"))
+        if w is not None:
+            page_width = int(w)
+    if pgMar is not None:
+        left = pgMar.get(qn("w:left"))
+        right = pgMar.get(qn("w:right"))
+        if left is not None:
+            left_margin = int(left)
+        if right is not None:
+            right_margin = int(right)
+
+    right_tab_pos = page_width - right_margin
+    if right_tab_pos <= left_margin:
+        right_tab_pos = 9638  # sensible fallback
+
+    eq_counter = 0
+
+    for elem in body:
+        if elem.tag != qn("w:p"):
+            continue
+        omath_para = elem.find(qn("m:oMathPara"))
+        if omath_para is None:
+            continue
+
+        eq_counter += 1
+
+        # Add right-aligned tab stop in paragraph properties
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is None:
+            pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+            elem.insert(0, pPr)
+
+        tabs = pPr.find(qn("w:tabs"))
+        if tabs is None:
+            tabs = parse_xml(f'<w:tabs {nsdecls("w")}></w:tabs>')
+            pPr.append(tabs)
+        tabs.append(parse_xml(
+            f'<w:tab {nsdecls("w")} w:val="right" w:pos="{right_tab_pos}"/>'
+        ))
+
+        # Ensure fixed 20pt line spacing
+        spacing = pPr.find(qn("w:spacing"))
+        if spacing is None:
+            pPr.append(parse_xml(
+                f'<w:spacing {nsdecls("w")} w:line="400" w:lineRule="exact"/>'
+            ))
+        else:
+            spacing.set(qn("w:line"), "400")
+            spacing.set(qn("w:lineRule"), "exact")
+
+        # Insert tab character + equation number after oMathPara
+        num_text = f"({eq_counter})"
+        run_xml = (
+            f'<w:r {nsdecls("w")}>'
+            f'  <w:rPr>'
+            f'    <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>'
+            f'    <w:sz w:val="21"/>'
+            f'    <w:szCs w:val="21"/>'
+            f'  </w:rPr>'
+            f'  <w:tab/>'
+            f'  <w:t xml:space="preserve">{num_text}</w:t>'
+            f'</w:r>'
+        )
+        omath_para.addnext(parse_xml(run_xml))
+
+
 def _add_toc(doc: Document, toc_title: str) -> None:
     """Add a TOC field after the heading that matches the TOC title.
 
@@ -838,6 +925,9 @@ def postprocess(
 
     # 2.5 Format figure captions (centered, bold, 10.5pt, spacing)
     _format_figure_captions(doc)
+
+    # 2.8 Format equation numbers (right-aligned, sequential numbering)
+    _format_equation_numbers(doc)
 
     # 3. Set headers and footers on each section
     _set_section_headers_footers(doc, header_text, title)
