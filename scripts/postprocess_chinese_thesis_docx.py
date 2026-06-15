@@ -184,18 +184,117 @@ def _insert_cover(doc: Document, cover_docx: Path, cover_fields: dict[str, str])
     return insert_at + 1
 
 
-def _paragraph_xml(text: str, *, align: str | None = None, bold: bool = False, size: int | None = None) -> str:
-    ppr_parts: list[str] = []
-    rpr_parts: list[str] = []
-    if align:
-        ppr_parts.append(f'<w:jc w:val="{align}"/>')
+def _run_properties_xml(
+    *,
+    bold: bool = False,
+    size: int | None = None,
+    east_asia_font: str = "宋体",
+    ascii_font: str = "Times New Roman",
+) -> str:
+    rpr_parts = [
+        f'<w:rFonts w:eastAsia="{east_asia_font}" w:ascii="{ascii_font}" w:hAnsi="{ascii_font}"/>'
+    ]
     if bold:
         rpr_parts.append("<w:b/>")
     if size:
         rpr_parts.append(f'<w:sz w:val="{size}"/>')
-    ppr = f"<w:pPr>{''.join(ppr_parts)}<w:rPr>{''.join(rpr_parts)}</w:rPr></w:pPr>" if ppr_parts or rpr_parts else ""
-    rpr = f"<w:rPr>{''.join(rpr_parts)}</w:rPr>" if rpr_parts else ""
+        rpr_parts.append(f'<w:szCs w:val="{size}"/>')
+    return f"<w:rPr>{''.join(rpr_parts)}</w:rPr>"
+
+
+def _paragraph_xml(
+    text: str,
+    *,
+    align: str | None = None,
+    bold: bool = False,
+    size: int | None = None,
+    east_asia_font: str = "宋体",
+    ascii_font: str = "Times New Roman",
+    before: int | None = None,
+    after: int | None = None,
+    first_line_chars: int | None = None,
+) -> str:
+    ppr_parts: list[str] = []
+    spacing_attrs = ['w:line="400"', 'w:lineRule="exact"']
+    if before is not None:
+        spacing_attrs.append(f'w:before="{before}"')
+    if after is not None:
+        spacing_attrs.append(f'w:after="{after}"')
+    ppr_parts.append(f"<w:spacing {' '.join(spacing_attrs)}/>")
+    if first_line_chars is not None:
+        ppr_parts.append(f'<w:ind w:firstLineChars="{first_line_chars}"/>')
+    if align:
+        ppr_parts.append(f'<w:jc w:val="{align}"/>')
+    rpr = _run_properties_xml(
+        bold=bold,
+        size=size,
+        east_asia_font=east_asia_font,
+        ascii_font=ascii_font,
+    )
+    ppr = f"<w:pPr>{''.join(ppr_parts)}{rpr}</w:pPr>" if ppr_parts or rpr else ""
     return f'<w:p {nsdecls("w")}>{ppr}<w:r>{rpr}<w:t>{escape(text)}</w:t></w:r></w:p>'
+
+
+def _blank_line_xml() -> str:
+    return (
+        f'<w:p {nsdecls("w")}>'
+        f'  <w:pPr><w:spacing w:line="400" w:lineRule="exact"/></w:pPr>'
+        f"</w:p>"
+    )
+
+
+def _strip_trailing_punctuation(text: str) -> str:
+    return text.strip().rstrip("；;，,。.")
+
+
+def _capitalize_english_keywords(text: str) -> str:
+    terms = []
+    for term in re.split(r"\s*;\s*", _strip_trailing_punctuation(text)):
+        term = term.strip()
+        if not term:
+            continue
+        terms.append(term[:1].upper() + term[1:])
+    return "; ".join(terms)
+
+
+def _capitalize_english_title(text: str) -> str:
+    words = []
+    for word in text.split():
+        words.append(word if word.isupper() else word[:1].upper() + word[1:])
+    return " ".join(words)
+
+
+def _keyword_paragraph_xml(
+    label: str,
+    terms: str,
+    *,
+    label_east_asia_font: str,
+    term_east_asia_font: str,
+    ascii_font: str = "Times New Roman",
+    first_line_chars: int | None = None,
+) -> str:
+    ppr_parts = ['<w:spacing w:line="400" w:lineRule="exact"/>']
+    if first_line_chars is not None:
+        ppr_parts.append(f'<w:ind w:firstLineChars="{first_line_chars}"/>')
+    label_rpr = _run_properties_xml(
+        bold=True,
+        size=24,
+        east_asia_font=label_east_asia_font,
+        ascii_font=ascii_font,
+    )
+    term_rpr = _run_properties_xml(
+        bold=False,
+        size=24,
+        east_asia_font=term_east_asia_font,
+        ascii_font=ascii_font,
+    )
+    return (
+        f'<w:p {nsdecls("w")}>'
+        f'  <w:pPr>{"".join(ppr_parts)}{term_rpr}</w:pPr>'
+        f'  <w:r>{label_rpr}<w:t>{escape(label)}</w:t></w:r>'
+        f'  <w:r>{term_rpr}<w:t>{escape(terms)}</w:t></w:r>'
+        f"</w:p>"
+    )
 
 
 def _page_break_xml() -> str:
@@ -216,20 +315,73 @@ def _split_abstract_paragraphs(text: str) -> list[str]:
 
 def _insert_abstract_pages(doc: Document, insert_at: int, abstract_fields: dict[str, str]) -> int:
     """Insert Chinese and English abstract pages after the cover."""
+    title_en = abstract_fields.get("title-en", "").strip()
     abstract_zh = abstract_fields.get("abstract-zh", "").strip()
-    keywords_zh = abstract_fields.get("keywords-zh", "").strip()
+    keywords_zh = _strip_trailing_punctuation(abstract_fields.get("keywords-zh", ""))
     abstract_en = abstract_fields.get("abstract-en", "").strip()
-    keywords_en = abstract_fields.get("keywords-en", "").strip()
+    keywords_en = _capitalize_english_keywords(abstract_fields.get("keywords-en", ""))
 
     chunks: list[str] = [
-        _paragraph_xml("摘要", align="center", bold=True, size=32),
+        _blank_line_xml(),
+        _paragraph_xml("摘　要", align="center", bold=True, size=32, east_asia_font="黑体"),
+        _blank_line_xml(),
     ]
-    chunks.extend(_paragraph_xml(paragraph) for paragraph in _split_abstract_paragraphs(abstract_zh))
-    chunks.append(_paragraph_xml(f"关键词：{keywords_zh}", bold=True))
+    chunks.extend(
+        _paragraph_xml(paragraph, first_line_chars=200)
+        for paragraph in _split_abstract_paragraphs(abstract_zh)
+    )
+    chunks.append(_blank_line_xml())
+    chunks.append(
+        _keyword_paragraph_xml(
+            "关键词：",
+            keywords_zh,
+            label_east_asia_font="黑体",
+            term_east_asia_font="宋体",
+            first_line_chars=200,
+        )
+    )
     chunks.append(_page_break_xml())
-    chunks.append(_paragraph_xml("ABSTRACT", align="center", bold=True, size=32))
-    chunks.extend(_paragraph_xml(paragraph) for paragraph in _split_abstract_paragraphs(abstract_en))
-    chunks.append(_paragraph_xml(f"Keywords: {keywords_en}", bold=True))
+    if title_en:
+        chunks.append(
+            _paragraph_xml(
+                _capitalize_english_title(title_en),
+                align="center",
+                size=32,
+                east_asia_font="Times New Roman",
+                ascii_font="Times New Roman",
+            )
+        )
+        chunks.append(_blank_line_xml())
+    chunks.append(
+        _paragraph_xml(
+            "ABSTRACT",
+            align="center",
+            bold=True,
+            size=32,
+            east_asia_font="Times New Roman",
+            ascii_font="Times New Roman",
+        )
+    )
+    chunks.append(_blank_line_xml())
+    chunks.extend(
+        _paragraph_xml(
+            paragraph,
+            first_line_chars=400,
+            east_asia_font="Times New Roman",
+            ascii_font="Times New Roman",
+        )
+        for paragraph in _split_abstract_paragraphs(abstract_en)
+    )
+    chunks.append(_blank_line_xml())
+    chunks.append(
+        _keyword_paragraph_xml(
+            "Keywords: ",
+            keywords_en,
+            label_east_asia_font="Times New Roman",
+            term_east_asia_font="Times New Roman",
+            ascii_font="Times New Roman",
+        )
+    )
     chunks.append(_page_break_xml())
     return _insert_xml_elements(doc, insert_at, chunks)
 
