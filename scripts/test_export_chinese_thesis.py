@@ -11,6 +11,7 @@ import scripts.build_chinese_reference_docx as build_ref
 import scripts.export_chinese_thesis as export
 from scripts.postprocess_chinese_thesis_docx import (
     _add_section_breaks_and_page_breaks,
+    _format_equation_numbers,
     _format_figure_captions,
     _format_table_captions_and_content,
     _is_chapter_heading,
@@ -858,3 +859,152 @@ def test_format_tables_three_line_skips_figure_table(tmp_path: Path) -> None:
     if tblBorders is not None:
         top = tblBorders.find(qn("w:top"))
         assert top is None or top.get(qn("w:val")) != "single", "FigureTable should not get three-line borders"
+
+
+# ---------------------------------------------------------------------------
+# Equation formatting tests
+# ---------------------------------------------------------------------------
+
+def _add_display_equation(doc: Document, text: str) -> None:
+    """Append a display equation paragraph (w:p > m:oMathPara > m:oMath) to a doc."""
+    from docx.oxml.ns import nsmap as _nsmap
+    body = doc.element.body
+    w_ns = _nsmap["w"]
+    m_ns = _nsmap["m"]
+    ns = f'xmlns:w="{w_ns}" xmlns:m="{m_ns}"'
+    para_xml = (
+        f'<w:p {ns}>'
+        f'  <w:pPr><w:pStyle w:val="BodyText"/></w:pPr>'
+        f'  <m:oMathPara>'
+        f'    <m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr>'
+        f'    <m:oMath>'
+        f'      <m:r><m:t>{{}}</m:t></m:r>'
+        f'    </m:oMath>'
+        f'  </m:oMathPara>'
+        f'</w:p>'
+    )
+    para = parse_xml(para_xml.format(text))
+    body.append(para)
+
+
+def _add_inline_equation_paragraph(doc: Document, before: str, after: str) -> None:
+    """Append a paragraph with inline math (text + m:oMath + text)."""
+    from docx.oxml.ns import nsmap as _nsmap
+    body = doc.element.body
+    w_ns = _nsmap["w"]
+    m_ns = _nsmap["m"]
+    ns = f'xmlns:w="{w_ns}" xmlns:m="{m_ns}"'
+    para_xml = (
+        f'<w:p {ns}>'
+        f'  <w:pPr><w:pStyle w:val="BodyText"/></w:pPr>'
+        f'  <w:r><w:t>{before}</w:t></w:r>'
+        f'  <m:oMath>'
+        f'    <m:r><m:t>a=b</m:t></m:r>'
+        f'  </m:oMath>'
+        f'  <w:r><w:t>{after}</w:t></w:r>'
+        f'</w:p>'
+    )
+    body.append(parse_xml(para_xml))
+
+
+def _write_equation_docx(path, num_equations=1, include_inline=False):
+    """Create a minimal DOCX with display equations and optional inline math."""
+    doc = Document()
+    doc.add_paragraph("正文内容")
+    for i in range(num_equations):
+        _add_display_equation(doc, f"E = mc^{{{i+1}}}")
+    if include_inline:
+        _add_inline_equation_paragraph(doc, "内联公式", "正文继续")
+    doc.add_paragraph("第1章 绪论")
+    doc.save(path)
+
+
+def test_format_equation_numbers_basic(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_equation_docx(path, num_equations=1)
+    doc = Document(str(path))
+
+    _format_equation_numbers(doc)
+
+    all_text = "\n".join(p.text for p in doc.paragraphs)
+    assert "(1)" in all_text, "equation number (1) should be present"
+
+
+def test_format_equation_numbers_sequential(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_equation_docx(path, num_equations=3)
+    doc = Document(str(path))
+
+    _format_equation_numbers(doc)
+
+    all_text = "\n".join(p.text for p in doc.paragraphs)
+    assert "(1)" in all_text
+    assert "(2)" in all_text
+    assert "(3)" in all_text
+
+
+def test_format_equation_numbers_tab_stop(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_equation_docx(path, num_equations=1)
+    doc = Document(str(path))
+
+    _format_equation_numbers(doc)
+
+    # Verify right tab stop was added to the equation paragraph
+    found_tab = False
+    for elem in doc.element.body:
+        if elem.tag != qn("w:p"):
+            continue
+        if elem.find(qn("m:oMathPara")) is None:
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        assert pPr is not None, "pPr should exist"
+        tabs = pPr.find(qn("w:tabs"))
+        assert tabs is not None, "tabs element should exist"
+        for tab in tabs:
+            if tab.get(qn("w:val")) == "right":
+                found_tab = True
+                break
+    assert found_tab, "right tab stop should be added"
+
+
+def test_format_equation_numbers_no_equations(tmp_path: Path) -> None:
+    doc = Document()
+    doc.add_paragraph("只有正文，没有公式")
+    doc.add_paragraph("第1章 绪论")
+
+    # Must not crash
+    _format_equation_numbers(doc)
+
+
+def test_format_equation_numbers_inline_only(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_equation_docx(path, num_equations=0, include_inline=True)
+    doc = Document(str(path))
+
+    _format_equation_numbers(doc)
+
+    # Inline math should NOT be numbered
+    all_text = "\n".join(p.text for p in doc.paragraphs)
+    assert all("(" not in p for p in [p.text for p in doc.paragraphs]), \
+        "inline math should not get equation numbers"
+
+
+def test_format_equation_numbers_spacing(tmp_path: Path) -> None:
+    path = tmp_path / "test.docx"
+    _write_equation_docx(path, num_equations=1)
+    doc = Document(str(path))
+
+    _format_equation_numbers(doc)
+
+    for elem in doc.element.body:
+        if elem.tag != qn("w:p"):
+            continue
+        if elem.find(qn("m:oMathPara")) is None:
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        assert pPr is not None
+        spacing = pPr.find(qn("w:spacing"))
+        assert spacing is not None, "spacing should be set"
+        assert spacing.get(qn("w:line")) == "400", "line spacing should be 400 twips"
+        assert spacing.get(qn("w:lineRule")) == "exact", "line rule should be exact"
