@@ -417,6 +417,19 @@ pandoc paper.md -o paper.tex \
 
 DOCX output keeps the original Pandoc `--reference-doc` style mechanism and then applies profile-specific post-processing. If the selected profile has a built-in cover, or the user provides `--cover-docx`, the cover is inserted as the first page before front matter. If the user provides an official Word template, use it as `--reference-doc`; if they provide an official cover, use it as `--cover-docx`. If no official Word template is available, produce DOCX with the closest available reference document and mark final visual checks as required in Word/WPS/LibreOffice.
 
+Mainland Chinese thesis export requires bilingual front matter before formatting. Provide these fields in Markdown frontmatter, or include equivalent `## 摘要` and `## ABSTRACT` sections that the exporter can extract:
+
+```yaml
+title: ...
+title-en: ...
+abstract-zh: ...
+keywords-zh: ...
+abstract-en: ...
+keywords-en: ...
+```
+
+The exporter treats the first Markdown H1 as metadata and removes it from the body, so the title appears on the cover and headers but not as a duplicate body title before Chapter 1.
+
 ```bash
 python3 scripts/export_chinese_thesis.py \
   --input paper.md \

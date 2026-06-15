@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 from copy import deepcopy
+from html import escape
 import re
 import sys
 from pathlib import Path
@@ -128,7 +129,7 @@ def _strip_section_properties(element) -> None:
             parent.remove(sect_pr)
 
 
-def _insert_cover(doc: Document, cover_docx: Path, cover_fields: dict[str, str]) -> None:
+def _insert_cover(doc: Document, cover_docx: Path, cover_fields: dict[str, str]) -> int:
     """Prepend a filled DOCX cover template before the generated thesis body."""
     cover_doc = Document(str(cover_docx))
     _fill_cover_doc(cover_doc, cover_fields)
@@ -147,11 +148,83 @@ def _insert_cover(doc: Document, cover_docx: Path, cover_fields: dict[str, str])
         f"</w:p>"
     )
     body.insert(insert_at, page_break)
+    return insert_at + 1
+
+
+def _paragraph_xml(text: str, *, align: str | None = None, bold: bool = False, size: int | None = None) -> str:
+    ppr_parts: list[str] = []
+    rpr_parts: list[str] = []
+    if align:
+        ppr_parts.append(f'<w:jc w:val="{align}"/>')
+    if bold:
+        rpr_parts.append("<w:b/>")
+    if size:
+        rpr_parts.append(f'<w:sz w:val="{size}"/>')
+    ppr = f"<w:pPr>{''.join(ppr_parts)}<w:rPr>{''.join(rpr_parts)}</w:rPr></w:pPr>" if ppr_parts or rpr_parts else ""
+    rpr = f"<w:rPr>{''.join(rpr_parts)}</w:rPr>" if rpr_parts else ""
+    return f'<w:p {nsdecls("w")}>{ppr}<w:r>{rpr}<w:t>{escape(text)}</w:t></w:r></w:p>'
+
+
+def _page_break_xml() -> str:
+    return f'<w:p {nsdecls("w")}><w:r><w:br w:type="page"/></w:r></w:p>'
+
+
+def _insert_xml_elements(doc: Document, insert_at: int, xml_chunks: list[str]) -> int:
+    body = doc.element.body
+    for chunk in xml_chunks:
+        body.insert(insert_at, parse_xml(chunk))
+        insert_at += 1
+    return insert_at
+
+
+def _split_abstract_paragraphs(text: str) -> list[str]:
+    return [part.strip() for part in re.split(r"\n\s*\n", text.strip()) if part.strip()]
+
+
+def _insert_abstract_pages(doc: Document, insert_at: int, abstract_fields: dict[str, str]) -> int:
+    """Insert Chinese and English abstract pages after the cover."""
+    abstract_zh = abstract_fields.get("abstract-zh", "").strip()
+    keywords_zh = abstract_fields.get("keywords-zh", "").strip()
+    abstract_en = abstract_fields.get("abstract-en", "").strip()
+    keywords_en = abstract_fields.get("keywords-en", "").strip()
+
+    chunks: list[str] = [
+        _paragraph_xml("摘要", align="center", bold=True, size=32),
+    ]
+    chunks.extend(_paragraph_xml(paragraph) for paragraph in _split_abstract_paragraphs(abstract_zh))
+    chunks.append(_paragraph_xml(f"关键词：{keywords_zh}", bold=True))
+    chunks.append(_page_break_xml())
+    chunks.append(_paragraph_xml("ABSTRACT", align="center", bold=True, size=32))
+    chunks.extend(_paragraph_xml(paragraph) for paragraph in _split_abstract_paragraphs(abstract_en))
+    chunks.append(_paragraph_xml(f"Keywords: {keywords_en}", bold=True))
+    chunks.append(_page_break_xml())
+    return _insert_xml_elements(doc, insert_at, chunks)
 
 
 def _is_cover_metadata_table(table) -> bool:
     labels = {_normalized_label(cell.text) for row in table.rows for cell in row.cells}
     return bool({"课题名称", "学院", "专业", "班级", "学号", "姓名", "指导老师"} & labels)
+
+
+def _paragraph_text(element) -> str:
+    texts = element.findall(".//" + qn("w:t"))
+    return "".join(t.text or "" for t in texts).strip()
+
+
+def _remove_generated_title_paragraph(doc: Document, title: str) -> None:
+    """Remove Pandoc's generated metadata title paragraph from the body."""
+    if not title:
+        return
+    body = doc.element.body
+    for elem in list(body):
+        if elem.tag != qn("w:p"):
+            continue
+        text = _paragraph_text(elem)
+        if not text:
+            continue
+        if text == title:
+            body.remove(elem)
+        return
 
 
 def _add_header_to_section(section, header_text: str, title_text: str) -> None:
@@ -524,18 +597,29 @@ def postprocess(
     profile: str,
     cover_docx: Path | None = None,
     cover_fields: dict[str, str] | None = None,
+    abstract_fields: dict[str, str] | None = None,
 ) -> Path:
     """Add cover, headers, footers, TOC, section breaks, and table formatting."""
     doc = Document(str(input_docx))
     fields = {key: value for key, value in (cover_fields or {}).items() if value}
-    title = fields.get("title") or _find_title(doc)
+    explicit_title = fields.get("title", "")
+    title = explicit_title or _find_title(doc)
     fields.setdefault("title", title)
     header_text = PROFILE_HEADER_TEXT.get(profile, "本科毕业论文")
     toc_title = PROFILE_TOC_TITLE.get(profile, "目  录")
 
+    if explicit_title:
+        _remove_generated_title_paragraph(doc, explicit_title)
+
+    insert_at = 0
+
     # 0. Insert selected school cover before generated front matter/body.
     if cover_docx is not None:
-        _insert_cover(doc, cover_docx, fields)
+        insert_at = _insert_cover(doc, cover_docx, fields)
+
+    # 0b. Insert required Chinese/English abstract pages after the cover.
+    if abstract_fields:
+        insert_at = _insert_abstract_pages(doc, insert_at, abstract_fields)
 
     # 1. Add section breaks and chapter page breaks
     _add_section_breaks_and_page_breaks(doc)
