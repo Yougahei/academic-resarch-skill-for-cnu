@@ -439,14 +439,18 @@ def _is_chapter_heading(text: str) -> bool:
     Matches patterns like:
     - 第1章 / 第N章 / 第一章
     - 参考文献, 致谢, 附录, 附录A
+
+    Whitespace is normalized before matching so that spacing variants
+    like "致  谢" are also recognized.
     """
-    if re.match(r"^第[一二三四五六七八九十\d]+章", text):
+    normalized = re.sub(r"\s+", "", text)
+    if re.match(r"^第[一二三四五六七八九十\d]+章", normalized):
         return True
-    if re.match(r"^参考文献", text):
+    if normalized.startswith("参考文献"):
         return True
-    if re.match(r"^致谢", text):
+    if normalized.startswith("致谢"):
         return True
-    if re.match(r"^附录", text):
+    if normalized.startswith("附录"):
         return True
     return False
 
