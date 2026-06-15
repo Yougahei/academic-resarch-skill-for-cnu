@@ -25,7 +25,7 @@ from docx.oxml import parse_xml
 from docx.shared import Cm, Pt
 
 
-# Profile-specific settings
+# Profile-specific settings — fallback only; primary source is PROFICES from export_chinese_thesis.
 PROFILE_HEADER_TEXT: dict[str, str] = {
     "mainland-fallback": "本科毕业论文",
     "guangxi-undergrad": "广西大学本科毕业论文",
@@ -37,6 +37,39 @@ PROFILE_TOC_TITLE: dict[str, str] = {
     "guangxi-undergrad": "目  录",
     "sichuan-grad": "目  录",
 }
+
+# Import PROFILES lazily so the module can be used standalone.
+_PROFILES: dict | None = None
+
+
+def _get_export_profiles():
+    """Lazy import of PROFILES to avoid circular import at module load time."""
+    global _PROFILES
+    if _PROFILES is None:
+        try:
+            from scripts.export_chinese_thesis import PROFILES as _p
+            _PROFILES = _p
+        except ImportError:
+            _PROFILES = {}
+    return _PROFILES
+
+
+def _profile_header_text(profile_id: str) -> str:
+    """Get header text from the profile object, falling back to the static dict."""
+    profiles = _get_export_profiles()
+    p = profiles.get(profile_id)
+    if p is not None:
+        return p.header_text
+    return PROFILE_HEADER_TEXT.get(profile_id, "本科毕业论文")
+
+
+def _profile_toc_title(profile_id: str) -> str:
+    """Get TOC title from the profile object, falling back to the static dict."""
+    profiles = _get_export_profiles()
+    p = profiles.get(profile_id)
+    if p is not None:
+        return p.toc_title
+    return PROFILE_TOC_TITLE.get(profile_id, "目  录")
 
 COVER_FIELD_KEYS: tuple[str, ...] = (
     "title",
@@ -898,8 +931,8 @@ def postprocess(
     explicit_title = fields.get("title", "")
     title = explicit_title or _find_title(doc)
     fields.setdefault("title", title)
-    header_text = PROFILE_HEADER_TEXT.get(profile, "本科毕业论文")
-    toc_title = PROFILE_TOC_TITLE.get(profile, "目  录")
+    header_text = _profile_header_text(profile)
+    toc_title = _profile_toc_title(profile)
 
     if explicit_title:
         _remove_generated_title_paragraph(doc, explicit_title)

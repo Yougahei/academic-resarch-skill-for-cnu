@@ -369,6 +369,61 @@ def test_patch_styles_xml_sets_chinese_fonts() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Profile auto-discovery tests
+# ---------------------------------------------------------------------------
+
+
+def test_discover_profiles_finds_builtin_templates() -> None:
+    from scripts.export_chinese_thesis import discover_profiles, PROFILES
+
+    discovered = discover_profiles()
+    assert "guangxi-undergrad" in discovered, "should find guangxi reference docx"
+    assert "sichuan-grad" in discovered, "should find sichuan reference docx"
+    assert "mainland-fallback" in discovered, "should find mainland reference docx"
+
+    # Hardcoded profiles should have proper header/toc values
+    p = PROFILES["guangxi-undergrad"]
+    assert p.header_text == "广西大学本科毕业论文"
+    assert p.toc_title == "目  录"
+
+    p = PROFILES["mainland-fallback"]
+    assert p.header_text == "本科毕业论文"
+    assert p.toc_title == "目录"
+
+
+def test_discover_profiles_json_sidecar(tmp_path: Path) -> None:
+    import importlib, json
+    from scripts.export_chinese_thesis import DOCX_TEMPLATE_DIR, discover_profiles
+
+    # Create a mock reference docx + sidecar JSON
+    ref = DOCX_TEMPLATE_DIR / f"test_univ_undergrad_reference.docx"
+    meta = DOCX_TEMPLATE_DIR / "test_univ_undergrad.json"
+    try:
+        ref.write_text("")
+        meta.write_text(json.dumps({
+            "label": "Test University",
+            "header_text": "测试大学本科毕业论文",
+            "toc_title": "目  录",
+            "school_label": "测试大学",
+            "degree_label": "本科",
+            "paper_type_label": "本科毕业论文",
+        }, ensure_ascii=False))
+
+        # Re-discover (module-level PROFILES already loaded, but discover_profiles re-scans)
+        import scripts.export_chinese_thesis as m
+        importlib.reload(m)
+        p = m.PROFILES.get("test-univ-undergrad")
+        assert p is not None, f"test-univ-undergrad should be discovered. Got: {sorted(m.PROFILES.keys())}"
+        assert p.header_text == "测试大学本科毕业论文"
+        assert p.toc_title == "目  录"
+        assert p.label == "Test University"
+        assert p.school_label == "测试大学"
+    finally:
+        ref.unlink(missing_ok=True)
+        meta.unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
 # Chapter page break tests
 # ---------------------------------------------------------------------------
 
