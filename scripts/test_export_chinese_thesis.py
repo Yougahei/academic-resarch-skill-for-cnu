@@ -4,10 +4,17 @@ from pathlib import Path
 import zipfile
 
 from docx import Document
+from docx.oxml import parse_xml
+from docx.oxml.ns import nsdecls, qn
 
 import scripts.build_chinese_reference_docx as build_ref
 import scripts.export_chinese_thesis as export
-from scripts.postprocess_chinese_thesis_docx import postprocess
+from scripts.postprocess_chinese_thesis_docx import (
+    _add_section_breaks_and_page_breaks,
+    _is_chapter_heading,
+    _paragraph_text,
+    postprocess,
+)
 
 
 def test_profile_assets_exist() -> None:
@@ -355,3 +362,148 @@ def test_patch_styles_xml_sets_chinese_fonts() -> None:
     assert "宋体" in patched
     assert "黑体" in patched
     assert "firstLineChars" in patched
+
+
+# ---------------------------------------------------------------------------
+# Chapter page break tests
+# ---------------------------------------------------------------------------
+
+def _has_page_break_before(para) -> bool:
+    pPr = para._element.find(qn("w:pPr"))
+    if pPr is None:
+        return False
+    return pPr.find(qn("w:pageBreakBefore")) is not None
+
+
+def _has_section_break_before(elem) -> bool:
+    pPr = elem.find(qn("w:pPr"))
+    if pPr is None:
+        return False
+    return pPr.find(qn("w:sectPr")) is not None
+
+
+def test_is_chapter_heading_variants() -> None:
+    assert _is_chapter_heading("第1章 绪论")
+    assert _is_chapter_heading("第10章 讨论")
+    assert _is_chapter_heading("第一章 引言")
+    assert _is_chapter_heading("参考文献")
+    assert _is_chapter_heading("致  谢")
+    assert _is_chapter_heading("致谢")
+    assert _is_chapter_heading("附录")
+    assert _is_chapter_heading("附录A 调查问卷")
+
+
+def test_is_chapter_heading_non_matches() -> None:
+    assert not _is_chapter_heading("摘要")
+    assert not _is_chapter_heading("ABSTRACT")
+    assert not _is_chapter_heading("目  录")
+    assert not _is_chapter_heading("关键词：本体；大模型")
+    assert not _is_chapter_heading("Keywords: ontology; LLM")
+    assert not _is_chapter_heading("1.1 背景介绍")
+    assert not _is_chapter_heading("")
+
+
+def test_add_section_breaks_and_page_breaks_first_chapter(tmp_path: Path) -> None:
+    doc = Document()
+    doc.add_paragraph("目  录")
+    p1 = doc.add_paragraph("第1章 绪论")
+    doc.add_paragraph("绪论正文")
+    p2 = doc.add_paragraph("第2章 文献综述")
+    doc.add_paragraph("文献综述正文")
+
+    _add_section_breaks_and_page_breaks(doc)
+
+    # First chapter should have a section break before it
+    first_heading = body_paragraph_by_text(doc, "第1章 绪论")
+    assert first_heading is not None
+    assert not _has_page_break_before(p1), "first chapter must not get pageBreakBefore"
+
+    # There should be a section break paragraph somewhere before first chapter
+    body = doc.element.body
+    first_chapter_index = None
+    for i, elem in enumerate(body):
+        if elem.tag == qn("w:p"):
+            text = _paragraph_text(elem)
+            if text == "第1章 绪论":
+                first_chapter_index = i
+                break
+
+    assert first_chapter_index is not None and first_chapter_index > 0
+    prev = body[first_chapter_index - 1]
+    assert _has_section_break_before(prev), "expected section break before first chapter"
+
+
+def body_paragraph_by_text(doc: Document, text: str):
+    """Find first body paragraph in doc by exact text match."""
+    body = doc.element.body
+    for elem in body:
+        if elem.tag == qn("w:p"):
+            if _paragraph_text(elem) == text:
+                return elem
+    return None
+
+
+def test_add_section_breaks_and_page_breaks_subsequent_chapters(tmp_path: Path) -> None:
+    doc = Document()
+    doc.add_paragraph("目  录")
+    p_ch1 = doc.add_paragraph("第1章 绪论")
+    doc.add_paragraph("绪论正文")
+    p_ch2 = doc.add_paragraph("第2章 文献综述")
+    doc.add_paragraph("文献综述正文")
+    p_ch3 = doc.add_paragraph("第3章 研究方法")
+    doc.add_paragraph("研究方法正文")
+
+    _add_section_breaks_and_page_breaks(doc)
+
+    assert not _has_page_break_before(p_ch1), "first chapter must not get pageBreakBefore"
+    assert _has_page_break_before(p_ch2), "chapter 2 must get pageBreakBefore"
+    assert _has_page_break_before(p_ch3), "chapter 3 must get pageBreakBefore"
+
+
+def test_add_section_breaks_and_page_breaks_references_and_appendix(tmp_path: Path) -> None:
+    doc = Document()
+    doc.add_paragraph("目  录")
+    doc.add_paragraph("第1章 绪论")
+    doc.add_paragraph("绪论正文")
+    p_ref = doc.add_paragraph("参考文献")
+    p_app = doc.add_paragraph("附录A 调查问卷")
+
+    _add_section_breaks_and_page_breaks(doc)
+
+    assert _has_page_break_before(p_ref), "参考文献 must get pageBreakBefore"
+    assert _has_page_break_before(p_app), "附录 must get pageBreakBefore"
+
+
+def test_add_section_breaks_and_page_breaks_no_chapter(tmp_path: Path) -> None:
+    doc = Document()
+    doc.add_paragraph("摘要")
+    doc.add_paragraph("ABSTRACT")
+    doc.add_paragraph("正文内容")
+
+    # Must not crash
+    _add_section_breaks_and_page_breaks(doc)
+
+
+def test_add_section_breaks_toc_entries_skipped(tmp_path: Path) -> None:
+    doc = Document()
+    doc.add_paragraph("目  录")
+    # Add a TOC-style paragraph (simulating what Pandoc generates)
+    p_toc = doc.add_paragraph("第1章 绪论")
+    p_toc.style = doc.styles["Normal"]
+    # Override to TOC style
+    pPr = p_toc._element.find(qn("w:pPr"))
+    if pPr is None:
+        pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+        p_toc._element.insert(0, pPr)
+    pPr.append(parse_xml(f'<w:pStyle {nsdecls("w")} w:val="toc 1"/>'))
+
+    p_ch1 = doc.add_paragraph("第1章 绪论")  # real heading
+    doc.add_paragraph("绪论正文")
+    p_ch2 = doc.add_paragraph("第2章 文献综述")
+    doc.add_paragraph("文献综述正文")
+
+    _add_section_breaks_and_page_breaks(doc)
+
+    # TOC entry should NOT be detected as chapter heading
+    assert not _has_page_break_before(p_ch1), "first chapter still no break"
+    assert _has_page_break_before(p_ch2), "chapter 2 must get pageBreakBefore"
