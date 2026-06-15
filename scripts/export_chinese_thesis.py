@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,10 @@ class ExportProfile:
     label: str
     tex_template: Path
     reference_docx: Path
+    school_label: str
+    degree_label: str
+    paper_type_label: str
+    cover_docx: Path | None = None
 
 
 PROFILES: dict[str, ExportProfile] = {
@@ -32,20 +37,42 @@ PROFILES: dict[str, ExportProfile] = {
         label="Mainland China University Thesis Fallback",
         tex_template=ROOT / "academic-paper/templates/chinese_thesis_guangxi_undergrad_template.tex",
         reference_docx=ROOT / "academic-paper/templates/docx/mainland_fallback_reference.docx",
+        school_label="Mainland China University",
+        degree_label="Unspecified",
+        paper_type_label="Thesis",
     ),
     "guangxi-undergrad": ExportProfile(
         id="guangxi-undergrad",
         label="Guangxi University Undergraduate Thesis/Design",
         tex_template=ROOT / "academic-paper/templates/chinese_thesis_guangxi_undergrad_template.tex",
         reference_docx=ROOT / "academic-paper/templates/docx/guangxi_undergrad_reference.docx",
+        school_label="广西大学",
+        degree_label="本科",
+        paper_type_label="本科毕业论文",
+        cover_docx=ROOT / "academic-paper/templates/docx/covers/guangxi_undergrad_thesis_cover.docx",
     ),
     "sichuan-grad": ExportProfile(
         id="sichuan-grad",
         label="Sichuan University Master/Doctoral Dissertation",
         tex_template=ROOT / "academic-paper/templates/chinese_thesis_sichuan_grad_template.tex",
         reference_docx=ROOT / "academic-paper/templates/docx/sichuan_grad_reference.docx",
+        school_label="四川大学",
+        degree_label="硕士/博士",
+        paper_type_label="学位论文",
     ),
 }
+
+COVER_FIELD_KEYS: tuple[str, ...] = (
+    "title",
+    "college",
+    "major",
+    "class-name",
+    "student-id",
+    "author",
+    "advisor",
+    "date",
+    "paper-type",
+)
 
 
 def find_pandoc() -> str:
@@ -87,6 +114,58 @@ def build_tool_env() -> dict[str, str]:
 def _check_asset(path: Path, label: str) -> None:
     if not path.exists():
         raise FileNotFoundError(f"{label} not found: {path}")
+
+
+def _parse_simple_frontmatter(text: str) -> dict[str, str]:
+    if not text.startswith("---"):
+        return {}
+    match = re.match(r"^---\s*\n(.*?)\n---\s*(?:\n|$)", text, re.DOTALL)
+    if not match:
+        return {}
+    raw = match.group(1)
+    try:
+        import yaml  # type: ignore
+
+        loaded = yaml.safe_load(raw) or {}
+        if not isinstance(loaded, dict):
+            return {}
+        return {str(key): str(value) for key, value in loaded.items() if value is not None}
+    except Exception:
+        fields: dict[str, str] = {}
+        for line in raw.splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            value = value.strip().strip("'\"")
+            if value:
+                fields[key.strip()] = value
+        return fields
+
+
+def _find_markdown_h1(text: str) -> str:
+    for line in text.splitlines():
+        match = re.match(r"^#\s+(.+?)\s*$", line)
+        if match:
+            return match.group(1).strip()
+    return ""
+
+
+def extract_cover_fields(input_path: Path, profile: ExportProfile) -> dict[str, str]:
+    """Extract cover metadata from Markdown frontmatter and H1 fallback."""
+    text = input_path.read_text(encoding="utf-8")
+    fields = _parse_simple_frontmatter(text)
+    title = fields.get("title") or _find_markdown_h1(text)
+    if title:
+        fields["title"] = title
+    fields.setdefault("paper-type", profile.paper_type_label)
+    return {key: value for key, value in fields.items() if key in COVER_FIELD_KEYS and value}
+
+
+def cover_field_status(fields: dict[str, str]) -> tuple[list[str], list[str]]:
+    required = [key for key in COVER_FIELD_KEYS if key != "paper-type"]
+    filled = [key for key in required if fields.get(key)]
+    missing = [key for key in required if not fields.get(key)]
+    return filled, missing
 
 
 def build_pandoc_args(
@@ -151,10 +230,24 @@ def write_report(
     output_format: str,
     profile: ExportProfile,
     command: list[str],
+    cover_docx: Path | None = None,
+    cover_fields: dict[str, str] | None = None,
 ) -> None:
     field_note = ""
     if output_format == "docx":
+        filled, missing = cover_field_status(cover_fields or {})
+        cover_note = "\n## Cover Template\n"
+        if cover_docx:
+            cover_note += (
+                f"- Cover source: `{cover_docx}`\n"
+                f"- Filled fields: {', '.join(filled) if filled else 'none'}\n"
+                f"- Fields left for manual completion: {', '.join(missing) if missing else 'none'}\n"
+            )
+        else:
+            cover_note += "- Cover source: not configured for this profile.\n"
         field_note = (
+            cover_note
+            +
             "\n## Word/WPS Manual Refresh\n"
             "Open the generated DOCX in Word/WPS/LibreOffice, select all, "
             "refresh fields, then inspect the table of contents, page numbers, "
@@ -175,6 +268,9 @@ def write_report(
                 f"- Input: `{input_path}`",
                 f"- Output: `{output_path}`",
                 f"- Format: `{output_format}`",
+                f"- School: `{profile.school_label}`",
+                f"- Degree level: `{profile.degree_label}`",
+                f"- Paper type: `{profile.paper_type_label}`",
                 "",
                 "## Pandoc Command",
                 "",
@@ -205,12 +301,16 @@ def export_once(args: argparse.Namespace, output_format: str) -> Path:
     pandoc = find_pandoc()
     reference_docx = Path(args.reference_docx).resolve() if args.reference_docx else None
     tex_template = Path(args.tex_template).resolve() if args.tex_template else None
+    cover_docx = Path(args.cover_docx).resolve() if args.cover_docx else profile.cover_docx
     bibliography = Path(args.bibliography).resolve() if args.bibliography else None
     csl = Path(args.csl).resolve() if args.csl else None
+    cover_fields = extract_cover_fields(input_path, profile)
 
     _check_asset(input_path, "input")
     if output_format == "docx":
         _check_asset(reference_docx or profile.reference_docx, "reference DOCX")
+        if cover_docx:
+            _check_asset(cover_docx, "cover DOCX")
     if output_format in {"pdf", "latex"}:
         _check_asset(tex_template or profile.tex_template, "LaTeX template")
 
@@ -239,6 +339,8 @@ def export_once(args: argparse.Namespace, output_format: str) -> Path:
                 input_docx=output_path,
                 output_docx=output_path,
                 profile=profile.id,
+                cover_docx=cover_docx,
+                cover_fields=cover_fields,
             )
         except Exception as exc:
             print(f"WARNING: DOCX post-processing failed: {exc}", file=sys.stderr)
@@ -255,6 +357,8 @@ def export_once(args: argparse.Namespace, output_format: str) -> Path:
         output_format=output_format,
         profile=profile,
         command=command,
+        cover_docx=cover_docx if output_format == "docx" else None,
+        cover_fields=cover_fields if output_format == "docx" else None,
     )
     return output_path
 
@@ -276,6 +380,7 @@ def main() -> int:
         help="Output format. `all` writes .docx, .pdf, and .tex siblings.",
     )
     parser.add_argument("--reference-docx", help="Override DOCX reference template.")
+    parser.add_argument("--cover-docx", help="Override DOCX cover template.")
     parser.add_argument("--tex-template", help="Override LaTeX/PDF template.")
     parser.add_argument("--bibliography", help="Optional BibTeX bibliography.")
     parser.add_argument("--csl", help="Optional CSL file, for example GB/T 7714.")
