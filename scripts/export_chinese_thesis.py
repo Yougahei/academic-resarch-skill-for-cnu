@@ -20,6 +20,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+import json
+
+
 @dataclass(frozen=True)
 class ExportProfile:
     id: str
@@ -30,9 +33,75 @@ class ExportProfile:
     degree_label: str
     paper_type_label: str
     cover_docx: Path | None = None
+    header_text: str = "本科毕业论文"
+    toc_title: str = "目  录"
 
 
-PROFILES: dict[str, ExportProfile] = {
+DOCX_TEMPLATE_DIR = ROOT / "academic-paper" / "templates" / "docx"
+TEX_TEMPLATE_DIR = ROOT / "academic-paper" / "templates"
+
+
+def _profile_id_from_stem(stem: str) -> str:
+    """Convert filename stem like 'fudan_undergrad' to profile id 'fudan-undergrad'."""
+    return stem.replace("_", "-")
+
+
+def _read_json_sidecar(path: Path) -> dict:
+    """Read JSON sidecar file, returning {} if missing or invalid."""
+    if path.exists() and path.suffix == ".json":
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def discover_profiles() -> dict[str, ExportProfile]:
+    """Scan templates/docx/ directory for reference docx files and discover profiles.
+
+    Each *reference.docx file paired with an optional {stem}.json sidecar file
+    creates a profile. Hardcoded profiles in this file take priority when an id
+    overlaps (so they can't be overridden by accidental file drops).
+    """
+    discovered: dict[str, ExportProfile] = {}
+
+    if not DOCX_TEMPLATE_DIR.is_dir():
+        return discovered
+
+    for ref_path in sorted(DOCX_TEMPLATE_DIR.glob("*_reference.docx")):
+        stem = ref_path.stem.replace("_reference", "")
+        pid = _profile_id_from_stem(stem)
+
+        # Read optional sidecar JSON (filename without _reference suffix)
+        meta = _read_json_sidecar(ref_path.parent / f"{stem}.json")
+
+        # Try to infer tex template
+        tex_stem = f"chinese_thesis_{stem}_template.tex"
+        tex_candidate = TEX_TEMPLATE_DIR / tex_stem
+        tex_path = tex_candidate if tex_candidate.exists() else TEX_TEMPLATE_DIR / "chinese_thesis_guangxi_undergrad_template.tex"
+
+        # Try to infer cover docx
+        cover_path = DOCX_TEMPLATE_DIR / "covers" / f"{stem}_thesis_cover.docx"
+        cover = cover_path if cover_path.exists() else None
+
+        discovered[pid] = ExportProfile(
+            id=pid,
+            label=meta.get("label", f"Chinese University Thesis ({pid})"),
+            tex_template=tex_path,
+            reference_docx=ref_path,
+            school_label=meta.get("school_label", ""),
+            degree_label=meta.get("degree_label", ""),
+            paper_type_label=meta.get("paper_type_label", ""),
+            cover_docx=cover,
+            header_text=meta.get("header_text", "本科毕业论文"),
+            toc_title=meta.get("toc_title", "目  录"),
+        )
+
+    return discovered
+
+
+# Hardcoded built-in profiles — take priority over discovered.
+_BUILTIN_PROFILES: dict[str, ExportProfile] = {
     "mainland-fallback": ExportProfile(
         id="mainland-fallback",
         label="Mainland China University Thesis Fallback",
@@ -41,6 +110,8 @@ PROFILES: dict[str, ExportProfile] = {
         school_label="Mainland China University",
         degree_label="Unspecified",
         paper_type_label="Thesis",
+        header_text="本科毕业论文",
+        toc_title="目录",
     ),
     "guangxi-undergrad": ExportProfile(
         id="guangxi-undergrad",
@@ -51,6 +122,8 @@ PROFILES: dict[str, ExportProfile] = {
         degree_label="本科",
         paper_type_label="本科毕业论文",
         cover_docx=ROOT / "academic-paper/templates/docx/covers/guangxi_undergrad_thesis_cover.docx",
+        header_text="广西大学本科毕业论文",
+        toc_title="目  录",
     ),
     "sichuan-grad": ExportProfile(
         id="sichuan-grad",
@@ -60,8 +133,20 @@ PROFILES: dict[str, ExportProfile] = {
         school_label="四川大学",
         degree_label="硕士/博士",
         paper_type_label="学位论文",
+        header_text="四川大学硕士学位论文",
+        toc_title="目  录",
     ),
 }
+
+
+# Merge: built-in profiles take priority over discovered ones with the same id.
+def _build_profiles() -> dict[str, ExportProfile]:
+    merged = discover_profiles()
+    merged.update(_BUILTIN_PROFILES)
+    return merged
+
+
+PROFILES: dict[str, ExportProfile] = _build_profiles()
 
 COVER_FIELD_KEYS: tuple[str, ...] = (
     "title",
