@@ -302,6 +302,18 @@ def _add_page_number_footer(section, is_roman: bool = True) -> None:
     run3._element.append(fld_char_end)
 
 
+def _is_figure_table(table) -> bool:
+    """Check if a table is a Pandoc figure-fallback table."""
+    tbl = table._tbl
+    tblPr = tbl.find(qn("w:tblPr"))
+    if tblPr is None:
+        return False
+    tblStyle = tblPr.find(qn("w:tblStyle"))
+    if tblStyle is None:
+        return False
+    return tblStyle.get(qn("w:val")) == "FigureTable"
+
+
 def _format_tables_three_line(doc: Document) -> None:
     """Format all tables as 三线表 (three-line table).
 
@@ -313,7 +325,7 @@ def _format_tables_three_line(doc: Document) -> None:
     - Header row: bold
     """
     for table in doc.tables:
-        if _is_cover_metadata_table(table):
+        if _is_cover_metadata_table(table) or _is_figure_table(table):
             continue
         if not table.rows:
             continue
@@ -378,6 +390,100 @@ def _format_tables_three_line(doc: Document) -> None:
                 for para in cell.paragraphs:
                     for run in para.runs:
                         run.bold = True
+
+
+def _format_figure_captions(doc: Document) -> None:
+    """Format figure captions per university requirements.
+
+    - Caption below the figure, centered, 五号 (10.5pt) bold, fixed 20 pt line spacing
+    - One blank line before the figure and after the caption
+
+    Pandoc generates figures as CaptionedFigure + ImageCaption paragraph pairs.
+    """
+    body = doc.element.body
+    children = list(body)
+
+    # Collect (figure_idx, caption_idx) pairs from body children
+    pairs: list[tuple[int, int]] = []
+    i = 0
+    while i < len(children):
+        elem = children[i]
+        if elem.tag != qn("w:p"):
+            i += 1
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is not None:
+            pStyle = pPr.find(qn("w:pStyle"))
+            if pStyle is not None and pStyle.get(qn("w:val")) == "CaptionedFigure":
+                if i + 1 < len(children):
+                    next_elem = children[i + 1]
+                    if next_elem.tag == qn("w:p"):
+                        next_pPr = next_elem.find(qn("w:pPr"))
+                        if next_pPr is not None:
+                            next_pStyle = next_pPr.find(qn("w:pStyle"))
+                            if next_pStyle is not None and next_pStyle.get(qn("w:val")) == "ImageCaption":
+                                pairs.append((i, i + 1))
+                                i += 2
+                                continue
+        i += 1
+
+    if not pairs:
+        return
+
+    # Process in reverse order so insertions don't shift unprocessed indices
+    for fig_idx, cap_idx in reversed(pairs):
+        caption_elem = children[cap_idx]
+
+        # Ensure w:pPr exists
+        cap_pPr = caption_elem.find(qn("w:pPr"))
+        if cap_pPr is None:
+            cap_pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+            caption_elem.insert(0, cap_pPr)
+
+        # Center alignment
+        jc = cap_pPr.find(qn("w:jc"))
+        if jc is None:
+            cap_pPr.append(parse_xml(f'<w:jc {nsdecls("w")} w:val="center"/>'))
+
+        # Fixed 20 pt line spacing (400 twips)
+        spacing = cap_pPr.find(qn("w:spacing"))
+        if spacing is None:
+            cap_pPr.append(
+                parse_xml(f'<w:spacing {nsdecls("w")} w:line="400" w:lineRule="exact"/>')
+            )
+        else:
+            spacing.set(qn("w:line"), "400")
+            spacing.set(qn("w:lineRule"), "exact")
+
+        # Set bold and font size (五号 = 10.5pt = 21 half-pts) on all runs
+        for run in caption_elem.findall(qn("w:r")):
+            rPr = run.find(qn("w:rPr"))
+            if rPr is None:
+                rPr = parse_xml(f'<w:rPr {nsdecls("w")}></w:rPr>')
+                run.insert(0, rPr)
+            # Bold
+            if rPr.find(qn("w:b")) is None:
+                rPr.append(parse_xml(f'<w:b {nsdecls("w")}/>'))
+            # Font size
+            sz = rPr.find(qn("w:sz"))
+            if sz is None:
+                sz = parse_xml(f'<w:sz {nsdecls("w")} w:val="21"/>')
+                rPr.append(sz)
+            szCs = rPr.find(qn("w:szCs"))
+            if szCs is None:
+                szCs = parse_xml(f'<w:szCs {nsdecls("w")} w:val="21"/>')
+                rPr.append(szCs)
+
+        # Insert blank line after caption
+        blank_para_xml = (
+            f'<w:p {nsdecls("w")}>'
+            f'  <w:pPr><w:spacing w:line="400" w:lineRule="exact"/></w:pPr>'
+            f"</w:p>"
+        )
+        body.insert(cap_idx + 1, parse_xml(blank_para_xml))
+
+        # Insert blank line before figure
+        body.insert(fig_idx, parse_xml(blank_para_xml))
 
 
 def _add_toc(doc: Document, toc_title: str) -> None:
@@ -630,6 +736,9 @@ def postprocess(
 
     # 2. Format all tables as three-line tables (三线表)
     _format_tables_three_line(doc)
+
+    # 2.5 Format figure captions (centered, bold, 10.5pt, spacing)
+    _format_figure_captions(doc)
 
     # 3. Set headers and footers on each section
     _set_section_headers_footers(doc, header_text, title)
