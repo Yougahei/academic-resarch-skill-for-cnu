@@ -269,6 +269,19 @@ Materials: Complete paper text. field_analyst_agent auto-detects domain and conf
 ### academic-paper-reviewer → academic-paper (revision)
 Materials: Editorial Decision Letter, Revision Roadmap, Per-reviewer detailed comments
 
+## Upstream Maintenance Strategy
+
+This is a fork of `Imbad0202/academic-research-skills` adapted for Chinese university thesis workflows. The fork's core value is the **Chinese thesis format output layer** (`scripts/export_chinese_thesis.py`, `scripts/postprocess_chinese_thesis_docx.py`, LaTeX/DOCX templates). Agent behaviour, pipeline logic, and academic integrity gates are inherited from upstream.
+
+**Merge policy:**
+- Merge upstream when: a critical bug fix affects thesis output, a new feature is needed, or a security fix lands.
+- Skip upstream when: the current version is stable and the upstream changes are unrelated to Chinese thesis formatting.
+- Check upstream CHANGELOG quarterly; merging is optional, not mandatory.
+
+**Post-merge checklist:** see `docs/CNU_FORK_DELTA.md` §维护策略.
+
+**Do not modify** (accept upstream on conflict): all agent definitions, `shared/contracts/`, `shared/references/` (except `routing_discipline.md` and `phase_invocation_contract.md`), CI configs, `tests/`.
+
 ## Version Info
 - **Suite version**: 3.12.0 (per CHANGELOG.md)
 - **Last Updated**: 2026-06-08
