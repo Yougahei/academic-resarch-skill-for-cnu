@@ -307,6 +307,8 @@ PREV_FINDINGS=""
 OUT_DIR="audit_artifacts"
 BUNDLE_ID=""
 DRY_RUN=false
+MODEL="gpt-5.5"
+MODEL_EFFORT="xhigh"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -355,6 +357,16 @@ while [[ $# -gt 0 ]]; do
         printf '[run_codex_audit] error: --bundle-id requires a value\n' >&2; exit 64
       fi
       BUNDLE_ID="$2"; shift 2 ;;
+    --model)
+      if [[ $# -lt 2 || "$2" =~ ^-- ]]; then
+        printf '[run_codex_audit] error: --model requires a value\n' >&2; exit 64
+      fi
+      MODEL="$2"; shift 2 ;;
+    --model-effort)
+      if [[ $# -lt 2 || "$2" =~ ^-- ]]; then
+        printf '[run_codex_audit] error: --model-effort requires a value\n' >&2; exit 64
+      fi
+      MODEL_EFFORT="$2"; shift 2 ;;
     --dry-run)       DRY_RUN=true;       shift   ;;
     # Explicitly reject flags from early drafts that are NOT part of §4.2
     --bundle)
@@ -783,8 +795,8 @@ TEE_EXIT=0
 if [[ "${PRE_CODEX_MUTATION_DETECTED}" -eq 0 ]]; then
   set +e
   codex exec \
-    -m gpt-5.5 \
-    -c 'model_reasoning_effort="xhigh"' \
+    -m "${MODEL}" \
+    -c 'model_reasoning_effort="'"${MODEL_EFFORT}"'"' \
     --json \
     - \
     2> "${OUT_DIR}/${run_id}.stderr" \
