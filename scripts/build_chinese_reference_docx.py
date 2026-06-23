@@ -6,8 +6,6 @@ templates. They are used by Pandoc's `--reference-doc` path for DOCX output.
 from __future__ import annotations
 
 import argparse
-import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -15,6 +13,8 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from xml.etree import ElementTree as ET
+
+from scripts.export_chinese_thesis import find_pandoc
 
 
 NS = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
@@ -48,23 +48,6 @@ PROFILES: dict[str, DocxProfile] = {
         title="Sichuan University Graduate Dissertation Reference DOCX",
     ),
 }
-
-
-def find_pandoc() -> str:
-    env_path = os.environ.get("PANDOC")
-    if env_path and Path(env_path).exists():
-        return env_path
-    path = shutil.which("pandoc")
-    if path:
-        return path
-    try:
-        import pypandoc  # type: ignore
-
-        return str(pypandoc.get_pandoc_path())
-    except Exception as exc:  # pragma: no cover - exact import failure varies
-        raise RuntimeError(
-            "Pandoc not found. Install pandoc or pypandoc_binary first."
-        ) from exc
 
 
 def _w(tag: str) -> str:
