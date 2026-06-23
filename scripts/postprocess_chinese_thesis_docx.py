@@ -71,17 +71,6 @@ def _profile_toc_title(profile_id: str) -> str:
         return p.toc_title
     return PROFILE_TOC_TITLE.get(profile_id, "目  录")
 
-COVER_FIELD_KEYS: tuple[str, ...] = (
-    "title",
-    "college",
-    "major",
-    "class-name",
-    "student-id",
-    "author",
-    "advisor",
-    "date",
-)
-
 COVER_LABEL_TO_FIELD: dict[str, str] = {
     "课题名称": "title",
     "学院": "college",
