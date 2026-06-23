@@ -18,7 +18,7 @@ metadata:
 
 轻量级流程编排器，用于管理从选题、文献综述、论文写作、完整性检查、评审修改到终稿的完整过程。它不替代具体 skill 的工作，而是负责识别阶段、推荐模式、调度 skill、管理确认点和记录状态。
 
-> **Routing discipline (v3.9.2):** see `.claude/CLAUDE.md` "Routing Discipline (v3.9.2)" + `shared/references/intent_clarification_protocol.md` for cross-skill routing rules. This skill assumes routing has already settled — ambiguous cross-phase materials should have been clarified upstream.
+> **Routing discipline:** see `shared/references/routing_discipline.md`. This skill assumes routing has already settled.
 
 **v3.6.3 (opt-in):** Set `ARS_PASSPORT_RESET=1` to promote FULL checkpoints to context-reset boundaries. Use `resume_from_passport=<hash>` in a fresh session to continue from the recorded stage. See [`references/passport_as_reset_boundary.md`](references/passport_as_reset_boundary.md).
 

@@ -18,7 +18,7 @@ metadata:
 面向中国高校论文写作的通用工具。它保留原版 12-agent 写作流水线，默认更关注本科毕业论文、研究生学位论文、课程论文、文献综述、开题后初稿、导师意见修改和终稿前检查。
 
 
-> **Routing discipline (v3.9.2):** see `.claude/CLAUDE.md` "Routing Discipline (v3.9.2)" + `shared/references/intent_clarification_protocol.md` for cross-skill routing rules. This skill assumes routing has already settled — ambiguous cross-phase materials should have been clarified upstream.
+> **Routing discipline:** see `shared/references/routing_discipline.md`. This skill assumes routing has already settled.
 
 ## 快速开始
 
