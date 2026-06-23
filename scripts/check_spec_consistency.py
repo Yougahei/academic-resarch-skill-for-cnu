@@ -142,6 +142,15 @@ def check_skill_version_blocks() -> None:
             )
 
 
+# A version token is a dot-separated run of ≥3 numeric components. The repo's own grammar
+# already ships 4-component versions (v3.9.4.2), so a fixed `\d+\.\d+\.\d+` would capture only
+# the first three components of `3.9.4.2` and silently compare a truncated `3.9.4` — making a
+# genuinely-stale 4-component marker pass. `(?:\.\d+)*` is greedy, so it captures the FULL token;
+# the trailing `(?!\.?\d)` is a hard right boundary so a longer numeric run can never tail-match a
+# shorter capture (e.g. `3.9.4` must not partial-match inside `3.9.4.2`).
+_VERSION = r"\d+\.\d+\.\d+(?:\.\d+)*(?!\.?\d)"
+
+
 def _latest_changelog_date() -> str | None:
     """Parse the date of the latest release entry in CHANGELOG.md. The file follows
     Keep-a-Changelog convention — entries are reverse-chronological under a leading
@@ -200,15 +209,6 @@ def check_pipeline_docs() -> None:
         "academic-pipeline/agents/pipeline_orchestrator_agent.md",
         "Stage 4.5 can NEVER be skipped",
     )
-
-
-# A version token is a dot-separated run of ≥3 numeric components. The repo's own grammar
-# already ships 4-component versions (v3.9.4.2), so a fixed `\d+\.\d+\.\d+` would capture only
-# the first three components of `3.9.4.2` and silently compare a truncated `3.9.4` — making a
-# genuinely-stale 4-component marker pass. `(?:\.\d+)*` is greedy, so it captures the FULL token;
-# the trailing `(?!\.?\d)` is a hard right boundary so a longer numeric run can never tail-match a
-# shorter capture (e.g. `3.9.4` must not partial-match inside `3.9.4.2`).
-_VERSION = r"\d+\.\d+\.\d+(?:\.\d+)*(?!\.?\d)"
 
 
 def _suite_version() -> str | None:
