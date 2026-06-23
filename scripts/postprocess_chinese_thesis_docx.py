@@ -402,7 +402,7 @@ def _remove_generated_title_paragraph(doc: Document, title: str) -> None:
             continue
         if text == title:
             body.remove(elem)
-        return
+            return
 
 
 def _add_header_to_section(section, header_text: str, title_text: str) -> None:
