@@ -238,6 +238,10 @@ def _parse_simple_frontmatter(text: str) -> dict[str, str]:
             return {}
         return {str(key): str(value) for key, value in loaded.items() if value is not None}
     except Exception:
+        # Fallback line-by-line parser: splits on the first colon in each line.
+        # Limitations: cannot parse multi-line values, lists, nested mappings,
+        # YAML comments, or values containing colons. Suitable only for simple
+        # flat frontmatter with thesis metadata.
         fields: dict[str, str] = {}
         for line in raw.splitlines():
             if ":" not in line:
@@ -366,8 +370,21 @@ def extract_inline_abstract_blocks(body: str) -> tuple[dict[str, str], str]:
 
 
 def _yaml_quote(value: str) -> str:
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
+    """Quote a string value for safe inline YAML.
+
+    Prefers yaml.dump() when available for correctness; falls back to manual
+    escaping that handles the most common cases (backslash, double quote). The
+    fallback does NOT handle tabs, leading special characters (:, #), or values
+    containing triple-double-quotes — these are unlikely in thesis metadata.
+    """
+    try:
+        import yaml  # type: ignore
+
+        dumped = yaml.dump(value, allow_unicode=True, default_flow_style=False)
+        return dumped.rstrip("\n")
+    except Exception:
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{escaped}"'
 
 
 def _render_yaml_metadata(metadata: dict[str, str]) -> str:
