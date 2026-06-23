@@ -21,6 +21,8 @@ metadata:
 - **Writing Quality Check** — The report compiler runs a writing quality checklist before finalizing: flags AI-typical overused terms, checks sentence/paragraph length variation, removes throat-clearing openers. See `academic-paper/references/writing_quality_check.md`.
 
 > **Routing discipline:** see `shared/references/routing_discipline.md`. This skill assumes routing has already settled.
+>
+> **Data access level:** `raw` — may ingest and operate on original source material. See `shared/handoff_schemas.md` §data_access_level.
 
 ## 快速开始
 

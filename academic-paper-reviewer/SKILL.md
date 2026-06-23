@@ -22,6 +22,8 @@ metadata:
 3. Expanded review team from 4 to 5 members
 
 > **Routing discipline:** see `shared/references/routing_discipline.md`. This skill assumes routing has already settled.
+>
+> **Data access level:** `verified_only` — runs only after upstream integrity gates. See `shared/handoff_schemas.md` §data_access_level.
 
 ---
 

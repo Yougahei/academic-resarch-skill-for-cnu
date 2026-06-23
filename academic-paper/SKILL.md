@@ -19,6 +19,8 @@ metadata:
 
 
 > **Routing discipline:** see `shared/references/routing_discipline.md`. This skill assumes routing has already settled.
+>
+> **Data access level:** `redacted` — operates on sanitized material; no new raw ingestion. See `shared/handoff_schemas.md` §data_access_level.
 
 ## 快速开始
 

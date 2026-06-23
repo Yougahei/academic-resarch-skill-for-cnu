@@ -19,6 +19,8 @@ metadata:
 轻量级流程编排器，用于管理从选题、文献综述、论文写作、完整性检查、评审修改到终稿的完整过程。它不替代具体 skill 的工作，而是负责识别阶段、推荐模式、调度 skill、管理确认点和记录状态。
 
 > **Routing discipline:** see `shared/references/routing_discipline.md`. This skill assumes routing has already settled.
+>
+> **Data access level:** `verified_only` — runs only after upstream integrity gates. See `shared/handoff_schemas.md` §data_access_level.
 
 **v3.6.3 (opt-in):** Set `ARS_PASSPORT_RESET=1` to promote FULL checkpoints to context-reset boundaries. Use `resume_from_passport=<hash>` in a fresh session to continue from the recorded stage. See [`references/passport_as_reset_boundary.md`](references/passport_as_reset_boundary.md).
 
@@ -110,7 +112,7 @@ resume_from_passport=<hash> [stage=<n>] [mode=<m>]
 | **3'** | **RE-REVIEW** | **`academic-paper-reviewer`** | **re-review** | **Verification review report: revision response checklist + residual issues** |
 | **4'** | **RE-REVISE** | **`academic-paper`** | **revision** | **Second revised draft (if needed)** |
 | **4.5** | **FINAL INTEGRITY** | **`integrity_verification_agent`** | **final-check** | **Final verification report (must achieve 100% pass to proceed)** |
-| 5 | FINALIZE | `academic-paper` | format-convert | Final Paper (default MD; original DOCX/Pandoc/LaTeX/PDF path unchanged; optional Chinese university thesis template profile for LaTeX/PDF/DOCX-via-Pandoc output) |
+| 5 | FINALIZE | `academic-paper` | format-convert | Final Paper (MD/DOCX-via-Pandoc/LaTeX/PDF; Chinese university thesis LaTeX/PDF/DOCX-via-Pandoc output available via `--profile`) |
 | **6** | **PROCESS SUMMARY** | **orchestrator** | **auto** | **Paper creation process record MD + LaTeX to PDF (bilingual)** |
 
 **Parallelization opportunity (v3.3)**: Within Stage 2, the `academic-paper` skill's Phase 1 (literature_strategist_agent) and the `visualization_agent` can operate in parallel after Phase 2 (structure_architect_agent) completes the outline. Specifically:
@@ -132,7 +134,7 @@ This mirrors PaperOrchestra's parallel execution of Plot Generation (Step 2) and
 6. **Stage 3' RE-REVIEW** -> Accept|Minor -> Stage 4.5 / Major -> Stage 4'
 7. **Stage 4' RE-REVISE** -> user confirmation -> Stage 4.5 (no return to review)
 8. **Stage 4.5 FINAL INTEGRITY** -> PASS (zero issues) -> Stage 5 (FAIL -> fix and re-verify)
-9. **Stage 5 FINALIZE** -> keep original MD/DOCX-via-Pandoc/LaTeX/PDF path; if user selects Chinese university thesis formatting, use the selected Chinese thesis LaTeX/Pandoc template profile -> Stage 6
+9. **Stage 5 FINALIZE** -> generate MD/DOCX-via-Pandoc/LaTeX/PDF; if Chinese thesis formatting is selected, apply the corresponding LaTeX/Pandoc template profile -> Stage 6
 10. **Stage 6 PROCESS SUMMARY** -> ask language version -> generate process record MD -> LaTeX -> PDF -> end
 
 See `references/pipeline_state_machine.md` for complete state transition definitions.
@@ -590,9 +592,7 @@ Stage 5: academic-paper (format-convert mode)
   - Step 2: Produce MD, then generate DOCX via Pandoc when available, otherwise conversion instructions. For Chinese university thesis DOCX, use `scripts/export_chinese_thesis.py` with the selected built-in or official reference DOCX.
   - Step 3: If the selected target is Chinese university thesis formatting, select the official school template when supplied; otherwise use the built-in Guangxi/Sichuan/fallback LaTeX/Pandoc profile
   - Step 4: Produce LaTeX (using corresponding document class/template, e.g., apa7 class for APA 7.0 or Chinese thesis template for CNU profiles)
-  - Step 5: After user confirms content is correct, tectonic compiles PDF (final version)
-  - Fonts: Times New Roman (English) + Source Han Serif TC VF (Chinese) + Courier New (monospace)
-  - ⚠️ IRON RULE: PDF must be compiled from LaTeX (HTML-to-PDF is prohibited)
+  - Step 5: After user confirms content is correct, compile PDF (see `academic-paper/agents/formatter_agent.md` for LaTeX compilation and font requirements)
   - ⚠️ Chinese university DOCX output: Word/WPS/LibreOffice still needs final field refresh for TOC, pagination, and visual verification when generated via Pandoc
 ```
 
