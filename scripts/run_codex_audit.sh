@@ -308,21 +308,6 @@ OUT_DIR="audit_artifacts"
 BUNDLE_ID=""
 DRY_RUN=false
 
-# F-005 (§3.5): require_arg guards all value-taking flags so a missing operand
-# (e.g. `--stage --agent foo`) exits EX_USAGE 64, not set -u unbound-variable
-# exit 1. Checks $# >= 2 AND next token doesn't look like a flag (^--).
-_require_arg() {
-  local flag="$1"
-  # $# here is the caller's argument count after its own shift operations.
-  # We receive $# from the while-loop via the special `shift` semantics below;
-  # instead test the second positional ($2) of the calling while iteration.
-  # Because this is called from within the case block, $2 is the while-loop's $2.
-  if [[ $# -lt 3 || "$3" =~ ^-- ]]; then
-    printf '[run_codex_audit] error: %s requires a value\n' "${flag}" >&2
-    exit 64
-  fi
-}
-
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --stage)
