@@ -2,8 +2,8 @@
 name: academic-paper
 description: "面向中国高校论文写作的 12-agent 学术论文流水线。支持 full/plan/outline/revision/revision-coach/abstract/lit-review/format-convert/citation-check/disclosure 等 10 种模式，覆盖本科毕业论文、研究生学位论文、课程论文、文献综述、导师意见修改、中英双语摘要、引用检查和格式转换。保留原版 Style Calibration、Writing Quality Check 和学术诚信规则。触发：写论文、学术论文、毕业论文、学位论文、论文大纲、引导我写论文、导师意见、审稿意见、盲审意见、AI 使用声明。"
 metadata:
-  version: "3.2.0"
-  last_updated: "2026-06-01"
+  version: "3.12.0"
+  last_updated: "2026-06-23"
   status: active
   data_access_level: redacted
   task_type: open-ended
