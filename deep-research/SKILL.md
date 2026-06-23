@@ -16,6 +16,8 @@ metadata:
 
 面向论文选题、开题、文献综述和研究设计的通用研究工具。它保留原版 13-agent 架构，同时更适合中国高校论文前期工作：把模糊兴趣收敛为研究问题，把文献材料整理成可写作的证据结构。
 
+中文论文格式导出由 `scripts/export_chinese_thesis.py` 和 `academic-paper/templates/` 提供，支持广西大学本科、四川大学硕博及大陆高校通用回退模板。
+
 **v2.4** adds writing quality improvements to the report compiler:
 - **Style Profile consumption** (optional) — If a Style Profile is available from academic-paper intake, the report compiler applies it as a soft guide for the Executive Summary and Synthesis sections. Discipline conventions and report objectivity take priority.
 - **Writing Quality Check** — The report compiler runs a writing quality checklist before finalizing: flags AI-typical overused terms, checks sentence/paragraph length variation, removes throat-clearing openers. See `academic-paper/references/writing_quality_check.md`.

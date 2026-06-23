@@ -16,6 +16,8 @@ metadata:
 
 模拟导师、同行评审和盲审前检查的综合评阅流程：自动识别论文领域，动态配置 5 个评审角色，从方法、学科内容、跨学科视角和核心论证挑战等角度提出问题，最终输出结构化评审意见和修订路线图。
 
+中文论文格式支持由 `scripts/export_chinese_thesis.py` 提供，评审后可导出为符合中国高校规范的 LaTeX/PDF/DOCX 终稿。
+
 **v1.1 Improvements**:
 1. Added Devil's Advocate Reviewer — specifically challenges core arguments, detects logical fallacies, and identifies the strongest counter-arguments
 2. Added `re-review` mode — verification review, focused on checking whether revisions address the review comments
