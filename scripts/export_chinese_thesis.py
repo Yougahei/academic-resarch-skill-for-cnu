@@ -15,12 +15,10 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+import json
 
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-import json
 
 
 @dataclass(frozen=True)
