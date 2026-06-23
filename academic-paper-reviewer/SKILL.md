@@ -427,6 +427,6 @@ Follows the paper's language. Academic terms remain in English. User can overrid
 
 ---
 
-## Changelog
+## Version History
 
 > See `references/changelog.md` for full version history.

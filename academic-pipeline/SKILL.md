@@ -622,6 +622,6 @@ Stage 5: academic-paper (format-convert mode)
 
 ---
 
-## Changelog
+## Version History
 
 > See `references/changelog.md` for full version history.
