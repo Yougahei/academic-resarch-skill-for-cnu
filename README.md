@@ -25,12 +25,51 @@
 
 ## 四个核心 Skill
 
-| Skill | 用途 | Agent 数 |
-|---|---|---|
-| `deep-research` | 研究选题、文献检索、证据综述、系统综述 | 13 |
-| `academic-paper` | 论文结构规划、正文草拟、文献综述、修改、格式转换 | 12 |
-| `academic-paper-reviewer` | 多视角模拟评审（主编 + 3 位同行 + 反方） | 7 |
-| `academic-pipeline` | 全流程编排：研究 → 写作 → 完整性检查 → 评审 → 修改 → 终稿 | 5 |
+### Deep Research（深度研究，8 种模式）— 13 Agent
+
+| 这样说 | 触发模式 |
+|---|---|
+| "研究 AI 对高等教育的影响" | `full` — 完整研究 |
+| "给我一份 X 的快速摘要" | `quick` — 快速简报 |
+| "帮我做 X 的系统性文献回顾，含 PRISMA" | `systematic-review` — 系统综述 |
+| "引导我研究 X" | `socratic` — 苏格拉底引导 |
+| "帮我核查这些说法" | `fact-check` — 事实核查 |
+| "帮我做文献回顾" | `lit-review` — 文献回顾 |
+| "审查这篇论文的研究质量" | `review` — 论文审查 |
+
+### Academic Paper（学术论文撰写，11 种模式）— 12 Agent
+
+| 这样说 | 触发模式 |
+|---|---|
+| "帮我写一篇论文" | `full` — 完整撰写 |
+| "引导我写论文" | `plan` — 引导规划 |
+| "先帮我搭论文大纲" | `outline-only` — 只做大纲 |
+| "我有初稿，这是审稿意见" | `revision` — 修订 |
+| "帮我整理这些审稿意见成修订路线图" | `revision-coach` — 修订教练 |
+| "帮我写这篇的摘要" | `abstract-only` — 摘要 |
+| "把这批数据写成文献回顾论文" | `lit-review` — 文献回顾论文 |
+| "转换成 LaTeX" / "引用格式转 IEEE" | `format-convert` — 格式转换 |
+| "检查引用格式" | `citation-check` — 引用检查 |
+| "帮我生成 AI 使用声明" | `disclosure` — AI 使用声明 |
+
+### Academic Paper Reviewer（论文审查，6 种模式）— 7 Agent
+
+| 这样说 | 触发模式 |
+|---|---|
+| "审查这篇论文" | `full` — 主编 + R1/R2/R3 + 魔鬼代言人 |
+| "快速评估这篇论文" | `quick` — 快速评估 |
+| "引导我改进这篇论文" | `guided` — 引导改进 |
+| "检查研究方法" | `methodology-focus` — 方法论聚焦 |
+| "验收修订" | `re-review` — 再审验收 |
+| "用我的 gold set 校准 reviewer" | `calibration` — 校准 |
+
+### Academic Pipeline（全流程调度器）— 5 Agent
+
+| 这样说 | 触发阶段 |
+|---|---|
+| "我想做一篇完整的研究论文" | 从 Stage 1 开始完整 pipeline |
+| "我已经有论文，帮我审查" | 从 Stage 2.5 进入（先做学术诚信审查） |
+| "我收到审稿意见了" | 从 Stage 4 进入 |
 
 ### 上游关键功能
 
