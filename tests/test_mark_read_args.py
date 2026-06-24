@@ -7,6 +7,7 @@ file; it does not write to stdout on success).
 """
 
 import subprocess
+import sys
 import yaml
 import pytest
 from pathlib import Path
@@ -47,7 +48,7 @@ def test_ars_mark_read_writes_read_log(passport_with_corpus: Path) -> None:
     test_keys = ["smith2024-data", "wang2023"]
 
     result = subprocess.run(
-        ["python3", str(script_path), *test_keys, "--passport-path", str(passport_with_corpus)],
+        [sys.executable, str(script_path), *test_keys, "--passport-path", str(passport_with_corpus)],
         capture_output=True,
         text=True,
         check=False,
@@ -72,7 +73,7 @@ def test_ars_mark_read_rejects_zero_keys(passport_with_corpus: Path) -> None:
     script_path = Path("scripts/ars_mark_read.py")
 
     result = subprocess.run(
-        ["python3", str(script_path), "--passport-path", str(passport_with_corpus)],
+        [sys.executable, str(script_path), "--passport-path", str(passport_with_corpus)],
         capture_output=True,
         text=True,
         check=False,
@@ -87,7 +88,7 @@ def test_ars_mark_read_rejects_unknown_key(passport_with_corpus: Path) -> None:
     script_path = Path("scripts/ars_mark_read.py")
 
     result = subprocess.run(
-        ["python3", str(script_path), "not-in-corpus", "--passport-path", str(passport_with_corpus)],
+        [sys.executable, str(script_path), "not-in-corpus", "--passport-path", str(passport_with_corpus)],
         capture_output=True,
         text=True,
         check=False,
@@ -104,7 +105,7 @@ def test_ars_mark_read_argument_parsing(passport_with_corpus: Path) -> None:
     test_keys = ["smith2024-data", "wang:2023"]
 
     result = subprocess.run(
-        ["python3", str(script_path), *test_keys, "--passport-path", str(passport_with_corpus)],
+        [sys.executable, str(script_path), *test_keys, "--passport-path", str(passport_with_corpus)],
         capture_output=True,
         text=True,
         check=False,

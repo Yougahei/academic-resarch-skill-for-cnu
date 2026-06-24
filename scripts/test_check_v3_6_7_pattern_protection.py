@@ -15,6 +15,7 @@ that copy. The repo's actual files are never modified.
 from __future__ import annotations
 
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -43,7 +44,7 @@ def _archive_repo(dest: Path) -> None:
 def _run_lint(repo_dir: Path) -> tuple[int, str, str]:
     """Run the v3.6.7 lint inside `repo_dir`. Returns (rc, stdout, stderr)."""
     proc = subprocess.run(
-        ["python3", LINT_SCRIPT_REL],
+        [sys.executable, LINT_SCRIPT_REL],
         cwd=repo_dir,
         text=True,
         stdout=subprocess.PIPE,
