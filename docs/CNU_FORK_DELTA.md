@@ -2,8 +2,8 @@
 
 本文件记录 `Yougahei/acdemic-resarch-skill-for-CNU` 相对于 upstream (`Imbad0202/academic-research-skills`) 的所有改动。用于维护者快速定位 CNU 增量，以及合并 upstream 时检查冲突。
 
-> 最后同步 upstream：2026-06-23
-> 当前 CNU fork HEAD：与 upstream main 合并后 + CNU 增量
+> 最后同步 upstream：2026-06-23（分叉点 `c7f42d4`，upstream 此后发布 v3.13.0）
+> 当前 CNU fork HEAD：独立维护，不再持续同步上游（见下方「维护策略」）
 
 ## 新增文件（20 个）
 
@@ -105,27 +105,29 @@
 
 ## 维护策略
 
-### 原则
-CNU fork 的核心价值是**中文论文格式输出层**。Agent 行为、pipeline 逻辑、学术完整性门禁等全部依赖 upstream。维护策略以此为准：
+### 原则：独立维护，不持续同步上游
 
-1. **优先保持输出层稳定** — `scripts/export_chinese_thesis.py` 和 `scripts/postprocess_chinese_thesis_docx.py` 是 CNU fork 的 existence reason，不轻易重构。
-2. **按需合并 upstream** — 只在以下情况合并：
-   - 上游修复了影响中文论文输出的关键 bug
-   - 需要上游的新功能（如新的 citation verification gate）
-   - 上游的安全修复
-3. **定期检查但不强制合并** — 每季度检查 upstream CHANGELOG，评估是否需要合并。如果当前版本稳定且无关键需求，可以跳过。
-4. **合并后检查清单**：
-   - [ ] `PYTHONPATH=. pytest scripts/test_export_chinese_thesis.py -v` 全部通过
-   - [ ] `python3 scripts/check_spec_consistency.py` 无新增错误
-   - [ ] 4 个 SKILL.md 的 CNU 描述未被覆盖
-   - [ ] formatter_agent.md 的 CNU 规则未被覆盖
-   - [ ] 如果 upstream 新增了 shared/references/ 文件，检查是否与 `phase_invocation_contract.md`、`routing_discipline.md` 冲突
+本 fork 已发展为**独立产品**，核心价值是中文论文格式输出层（~3700 行自研 Python + 模板 + 字体映射 + 测试）。upstream 的方向是多语种学术研究流水线 / reviewer / cross-model 验证，与 CNU 输出层**无重叠**。因此采取独立维护策略：**不持续合并上游**，偶尔扫描 release notes 看有没有值得借鉴的工程思路，如有则单独 `git cherry-pick` 或手工移植，不做整体合并。
 
-### 维护面 vs 改动面
-- CNU 改动了 ~3700 行 Python + ~100 行 SKILL.md 修改
-- 需要同步维护的 upstream 代码约 75000+ 行
-- 绝大部分上游改动与 CNU 输出层无关
-- **实用建议**：如果当前版本对中文论文输出已经足够稳定，不合并 upstream 是完全合理的选择
+### 上游扫描记录
+
+- **2026-06-25 扫描**：upstream 已发布 v3.13.0（24 个新提交，领先分叉点 `c7f42d4`）。扫描结论：**无可借鉴内容**。
+  - diff/patch revision mode（#390/423/426）、provider-agnostic 跨模型验证（#455）、Socratic adjacent-framing probe（#461）、rebuttal-audit、format_profile schema（#439）—— 均属学术研究/reviewer 流水线，与中文论文格式导出无关。
+  - Windows Python hook 可移植性（#454）属上游 hook 体系，CNU fork 未使用该 hook，不适用。
+  - format_profile（#439）与 CNU 的硬编码 profile 概念重叠但路线不同（上游走 JSON schema + 声明式，CNU 走 Python dataclass + 硬编码 + 模板），借鉴价值低。
+  - dry-run 合并测试：15 个文件冲突，全部是文档/版本号/`check_spec_consistency.py` 检查策略冲突，**零核心代码冲突**——但解决这些冲突无业务收益，仅为同步上游文档策略付出维护税。
+
+### 何时重新评估
+
+以下任一情况发生时，重新扫描上游：
+
+- 上游新增了直接影响 Pandoc DOCX/LaTeX 导出或 python-docx 后处理的功能
+- 上游修复了 CNU 依赖的 shared/ 契约或 scripts/ 脚本中的 bug
+- CNU 需要上游的某个具体提交（单独 cherry-pick 即可，不必整体合并）
+
+### 稳定性优先
+
+`scripts/export_chinese_thesis.py` 和 `scripts/postprocess_chinese_thesis_docx.py` 是 CNU fork 的 existence reason，不轻易重构。维护面（~3700 行自研）远小于上游代码面（75000+ 行），绝大部分上游改动与 CNU 输出层无关。
 
 ## 已知问题
 
