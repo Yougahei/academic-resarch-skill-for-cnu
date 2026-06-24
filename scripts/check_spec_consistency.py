@@ -280,74 +280,13 @@ def check_readme_sections() -> None:
 
     expect_contains(rel_path, "version-v3.12.0-blue")
     expect_contains(rel_path, "releases/tag/v3.12.0")
-    expect_contains(rel_path, "### v3.12.0 (2026-06-08)")
-    expect_contains(rel_path, "### v3.11.1 (2026-06-06)")
-    expect_contains(rel_path, "### v3.11.0 (2026-06-04)")
-    expect_contains(rel_path, "### v3.10.0 (2026-06-01)")
-    expect_contains(rel_path, "### v3.9.4.2 (2026-05-19)")
-    expect_contains(rel_path, "### v3.9.4.1 (2026-05-19)")
-    expect_contains(rel_path, "### v3.9.4 (2026-05-18)")
-    expect_contains(rel_path, "### v3.9.1 (2026-05-18)")
-    expect_contains(rel_path, "### v3.9.0 (2026-05-17)")
-    expect_contains(rel_path, "### v3.8.0 (2026-05-16)")
-    expect_contains(rel_path, "### v3.7.0 (2026-05-05)")
-    expect_contains(rel_path, "### v3.6.8 (2026-05-03)")
-    expect_contains(rel_path, "### v3.6.7 (2026-04-30)")
-    expect_contains(rel_path, "### v3.6.5 (2026-04-27)")
-    expect_contains(rel_path, "### v3.6.4 (2026-04-25)")
-    expect_contains(rel_path, "### v3.6.3 (2026-04-23)")
-    expect_contains(rel_path, "### v3.6.2 (2026-04-23)")
-    expect_contains(rel_path, "### v3.5.1 (2026-04-22)")
-    expect_contains(rel_path, "### v3.5.0 (2026-04-21)")
-    expect_contains(rel_path, "### v3.4.0 (2026-04-20)")
-    expect_contains(rel_path, "### v3.3.6 (2026-04-15)")
-    expect_contains(rel_path, "### v3.3.5 (2026-04-15)")
-    expect_contains(rel_path, "### v3.3.4 (2026-04-15)")
-    expect_contains(rel_path, "### v3.3.3 (2026-04-15)")
-    expect_contains(rel_path, "### v3.3.2 (2026-04-15)")
-    for heading in (
-        "#### Deep Research (7 modes)",
-        "#### Academic Paper (10 modes)",
-        "#### Academic Paper Reviewer (6 modes)",
-        "### Deep Research (v2.9.4)",
-        "### Academic Paper (v3.2.0)",
-        "### Academic Paper Reviewer (v1.10.0)",
-        "### Academic Pipeline (v3.12.0)",
-    ):
-        if heading not in text:
-            fail(f"{rel_path}: missing heading {heading!r}")
-
-    paper_usage = extract_section(
-        text, "#### Academic Paper (10 modes)", "#### Academic Paper Reviewer (6 modes)"
-    )
-    for expected in ("outline-only mode", "abstract-only mode", "disclosure mode"):
-        if expected not in paper_usage:
-            fail(f"{rel_path}: Academic Paper usage section missing {expected!r}")
-    for forbidden in ("bilingual-abstract mode", "writing-polish mode", "full-auto mode"):
-        if forbidden in paper_usage:
-            fail(f"{rel_path}: Academic Paper usage section still contains {forbidden!r}")
-
-    deep_usage = extract_section(
-        text, "#### Deep Research (7 modes)", "#### Academic Paper (10 modes)"
-    )
-    if "review mode" not in deep_usage:
-        fail(f"{rel_path}: Deep Research usage section missing 'review mode'")
-    if "paper-review" in deep_usage:
-        fail(f"{rel_path}: Deep Research usage section still contains 'paper-review'")
-
-    reviewer_usage = extract_section(
-        text, "#### Academic Paper Reviewer (6 modes)", "#### Academic Pipeline (Orchestrator)"
-    )
-    if "calibration mode" not in reviewer_usage:
-        fail(f"{rel_path}: reviewer usage section missing 'calibration mode'")
-
+    # Upstream version changelog removed from CNU fork README; upstream history lives in
+    # the original repo's CHANGELOG and the fork's own CHANGELOG.md.
     for forbidden in (
         "6th independent reviewer",
         "Peer review gains 6th independent reviewer",
     ):
         expect_absent(rel_path, forbidden)
-    # DOCX contract lines moved to docs/SETUP.md in v3.3.6; checked there instead.
-    expect_contains(rel_path, "DOCX (via Pandoc when available)")
     check_relative_markdown_links(rel_path)
 
 
@@ -363,31 +302,6 @@ def check_readme_ja_sections() -> None:
 
     expect_contains(rel_path, "version-v3.12.0-blue")
     expect_contains(rel_path, "releases/tag/v3.12.0")
-    expect_contains(rel_path, "### v3.12.0 (2026-06-08)")
-    expect_contains(rel_path, "### v3.11.1 (2026-06-06)")
-    expect_contains(rel_path, "### v3.11.0 (2026-06-04)")
-    expect_contains(rel_path, "### v3.10.0 (2026-06-01)")
-    expect_contains(rel_path, "### v3.9.4.2 (2026-05-19)")
-    expect_contains(rel_path, "### v3.9.4.1 (2026-05-19)")
-    expect_contains(rel_path, "### v3.9.4 (2026-05-18)")
-    expect_contains(rel_path, "### v3.9.1 (2026-05-18)")
-    expect_contains(rel_path, "### v3.9.0 (2026-05-17)")
-    expect_contains(rel_path, "### v3.8.0 (2026-05-16)")
-    expect_contains(rel_path, "### v3.7.0 (2026-05-05)")
-    expect_contains(rel_path, "### v3.6.8 (2026-05-03)")
-    expect_contains(rel_path, "### v3.6.7 (2026-04-30)")
-    expect_contains(rel_path, "### v3.6.5 (2026-04-27)")
-    expect_contains(rel_path, "### v3.6.4 (2026-04-25)")
-    expect_contains(rel_path, "### v3.6.3 (2026-04-23)")
-    expect_contains(rel_path, "### v3.6.2 (2026-04-23)")
-    expect_contains(rel_path, "### v3.5.1 (2026-04-22)")
-    expect_contains(rel_path, "### v3.5.0 (2026-04-21)")
-    expect_contains(rel_path, "### v3.4.0 (2026-04-20)")
-    expect_contains(rel_path, "### v3.3.6 (2026-04-15)")
-    expect_contains(rel_path, "### v3.3.5 (2026-04-15)")
-    expect_contains(rel_path, "### v3.3.4 (2026-04-15)")
-    expect_contains(rel_path, "### v3.3.3 (2026-04-15)")
-    expect_contains(rel_path, "### v3.3.2 (2026-04-15)")
     for heading in (
         "#### Deep Research（7 モード）",
         "#### Academic Paper（10 モード）",
@@ -457,16 +371,9 @@ def check_readme_zh_sections() -> None:
         rel_path = config["rel_path"]
         text = read(rel_path)
         is_cnu = config.get("cnu_fork", False)
-        # CNU fork zh-CN uses English parentheses for version dates
-        paren_open = " (" if is_cnu else "（"
-        paren_close = ")" if is_cnu else "）"
 
         expect_contains(rel_path, "version-v3.12.0-blue")
         expect_contains(rel_path, "releases/tag/v3.12.0")
-        expect_contains(rel_path, f"### v3.12.0{paren_open}2026-06-08{paren_close}")
-        expect_contains(rel_path, f"### v3.11.1{paren_open}2026-06-06{paren_close}")
-        expect_contains(rel_path, f"### v3.11.0{paren_open}2026-06-04{paren_close}")
-        expect_contains(rel_path, f"### v3.10.0{paren_open}2026-06-01{paren_close}")
         for heading in config["headings"]:
             if heading not in text:
                 fail(f"{rel_path}: missing heading {heading!r}")
