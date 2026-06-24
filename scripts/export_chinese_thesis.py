@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 
+from scripts.chinese_fonts import latex_font_vars
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -553,6 +555,8 @@ def build_pandoc_args(
                 "chapter",
             ]
         )
+        for key, value in latex_font_vars().items():
+            args.extend(["-V", f"{key}={value}"])
     elif output_format == "latex":
         template = tex_template or profile.tex_template
         args.extend(
@@ -566,6 +570,8 @@ def build_pandoc_args(
                 "chapter",
             ]
         )
+        for key, value in latex_font_vars().items():
+            args.extend(["-V", f"{key}={value}"])
     else:
         raise ValueError(f"unsupported output format: {output_format}")
 

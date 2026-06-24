@@ -26,6 +26,13 @@ from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml
 from docx.shared import Cm, Pt
 
+from scripts.chinese_fonts import resolve_cjk_font
+
+_SONG = resolve_cjk_font("宋体")
+_HEI = resolve_cjk_font("黑体")
+_KAI = resolve_cjk_font("楷体")
+_LISHU = resolve_cjk_font("隶书")
+
 
 # Profile-specific settings — fallback only; primary source is PROFICES from export_chinese_thesis.
 PROFILE_HEADER_TEXT: dict[str, str] = {
@@ -64,7 +71,7 @@ PROFILE_HEADING_FORMATS: dict[str, dict[str, dict[str, str]]] = {
         "Heading2": {"sz": "30", "align": "left",   "before": "0",   "after": "0"},
         "Heading3": {"sz": "28", "align": "left",   "before": "150",   "after": "0"},
         "Heading4": {"sz": "24", "align": "left",   "before": "0",   "after": "0"},
-        "heading4_east_asia": "黑体",
+        "heading4_east_asia": _HEI,
     },
     "sichuan-grad": {
         # Sichan Level 1: 小三黑体(15pt), left-aligned
@@ -72,14 +79,14 @@ PROFILE_HEADING_FORMATS: dict[str, dict[str, dict[str, str]]] = {
         "Heading2": {"sz": "28", "align": "left",  "before": "0",   "after": "0"},
         "Heading3": {"sz": "24", "align": "left",  "before": "0",   "after": "0"},
         "Heading4": {"sz": "24", "align": "left",  "before": "0",   "after": "0"},
-        "heading4_east_asia": "楷体",  # Sichuan Level 4 uses 楷体, not 黑体
+        "heading4_east_asia": _KAI,  # Sichuan Level 4 uses 楷体, not 黑体
     },
     "mainland-fallback": {
         "Heading1": {"sz": "36", "align": "center", "before": "400", "after": "400"},
         "Heading2": {"sz": "30", "align": "left",   "before": "0",   "after": "0"},
         "Heading3": {"sz": "28", "align": "left",   "before": "0",   "after": "0"},
         "Heading4": {"sz": "24", "align": "left",   "before": "0",   "after": "0"},
-        "heading4_east_asia": "黑体",
+        "heading4_east_asia": _HEI,
     },
 }
 
@@ -190,7 +197,7 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
                     for para in row.cells[1].paragraphs:
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for run in para.runs:
-                            _set_run_font(run, east_asia="黑体", ascii="黑体",
+                            _set_run_font(run, east_asia=_HEI, ascii=_HEI,
                                           sz="52", bold=False)
                             # Add single underline
                             rPr = run._element.find(qn("w:rPr"))
@@ -204,7 +211,7 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
                 elif field == "advisor":
                     for para in row.cells[1].paragraphs:
                         for run in para.runs:
-                            _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+                            _set_run_font(run, east_asia=_SONG, ascii="Times New Roman",
                                           sz="28", bold=False)
                 filled.add(field)
     for tr in rows_to_delete:
@@ -221,7 +228,7 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
                 # Format date: 宋体 四号(14pt), centered (Issue #83)
                 para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 for run in para.runs:
-                    _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+                    _set_run_font(run, east_asia=_SONG, ascii="Times New Roman",
                                   sz="28", bold=False)
                 break
 
@@ -512,7 +519,7 @@ def _run_properties_xml(
     *,
     bold: bool = False,
     size: int | None = None,
-    east_asia_font: str = "宋体",
+    east_asia_font: str = _SONG,
     ascii_font: str = "Times New Roman",
 ) -> str:
     rpr_parts = [
@@ -532,7 +539,7 @@ def _paragraph_xml(
     align: str | None = None,
     bold: bool = False,
     size: int | None = None,
-    east_asia_font: str = "宋体",
+    east_asia_font: str = _SONG,
     ascii_font: str = "Times New Roman",
     before: int | None = None,
     after: int | None = None,
@@ -650,7 +657,7 @@ def _insert_abstract_pages(doc: Document, insert_at: int, abstract_fields: dict[
 
     chunks: list[str] = [
         _blank_line_xml(),
-        _paragraph_xml("摘　要", align="center", bold=True, size=32, east_asia_font="黑体", outline_lvl=1),
+        _paragraph_xml("摘　要", align="center", bold=True, size=32, east_asia_font=_HEI, outline_lvl=1),
         _blank_line_xml(),
     ]
     chunks.extend(
@@ -662,8 +669,8 @@ def _insert_abstract_pages(doc: Document, insert_at: int, abstract_fields: dict[
         _keyword_paragraph_xml(
             "关键词：",
             keywords_zh,
-            label_east_asia_font="黑体",
-            term_east_asia_font="宋体",
+            label_east_asia_font=_HEI,
+            term_east_asia_font=_SONG,
             first_line_chars=200,
         )
     )
@@ -753,7 +760,7 @@ def _add_header_to_section(section, header_text: str, title_text: str) -> None:
     para.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     run_left = para.add_run(header_text)
-    _set_cell_font(run_left, "隶书", Pt(12))
+    _set_cell_font(run_left, _LISHU, Pt(12))
 
     tab_stops = para.paragraph_format.tab_stops
     if tab_stops:
@@ -764,7 +771,7 @@ def _add_header_to_section(section, header_text: str, title_text: str) -> None:
 
     run_tab = para.add_run("\t")
     run_right = para.add_run(title_text)
-    _set_cell_font(run_right, "隶书", Pt(12))
+    _set_cell_font(run_right, _LISHU, Pt(12))
 
     pPr = para._element.find(qn("w:pPr"))
     if pPr is None:
@@ -967,7 +974,7 @@ def _format_table_cell_content(table) -> None:
 
                 # Set font on all runs
                 for run in para.runs:
-                    _set_cell_font(run, "宋体", Pt(10.5))
+                    _set_cell_font(run, _SONG, Pt(10.5))
 
 
 def _format_table_captions_and_content(doc: Document) -> None:
@@ -1269,10 +1276,10 @@ def _add_toc(doc: Document, toc_title: str, insert_at: int | None = None) -> Non
             f'  <w:pPr>'
             f'    <w:jc w:val="center"/>'
             f'    <w:spacing w:before="400" w:after="400" w:line="400" w:lineRule="exact"/>'
-            f'    <w:rPr><w:rFonts w:eastAsia="黑体" w:ascii="黑体" w:hAnsi="黑体"/>'
+            f'    <w:rPr><w:rFonts w:eastAsia="{_HEI}" w:ascii="{_HEI}" w:hAnsi="{_HEI}"/>'
             f'      <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>'
             f'  </w:pPr>'
-            f'  <w:r><w:rPr><w:rFonts w:eastAsia="黑体" w:ascii="黑体" w:hAnsi="黑体"/>'
+            f'  <w:r><w:rPr><w:rFonts w:eastAsia="{_HEI}" w:ascii="{_HEI}" w:hAnsi="{_HEI}"/>'
             f'      <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>'
             f'    <w:t>{toc_title}</w:t></w:r>'
             f"</w:p>"
@@ -1316,10 +1323,10 @@ def _add_toc(doc: Document, toc_title: str, insert_at: int | None = None) -> Non
             f'  <w:pPr>'
             f'    <w:jc w:val="center"/>'
             f'    <w:spacing w:before="400" w:after="400" w:line="400" w:lineRule="exact"/>'
-            f'    <w:rPr><w:rFonts w:eastAsia="黑体" w:ascii="黑体" w:hAnsi="黑体"/>'
+            f'    <w:rPr><w:rFonts w:eastAsia="{_HEI}" w:ascii="{_HEI}" w:hAnsi="{_HEI}"/>'
             f'      <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>'
             f'  </w:pPr>'
-            f'  <w:r><w:rPr><w:rFonts w:eastAsia="黑体" w:ascii="黑体" w:hAnsi="黑体"/>'
+            f'  <w:r><w:rPr><w:rFonts w:eastAsia="{_HEI}" w:ascii="{_HEI}" w:hAnsi="{_HEI}"/>'
             f'      <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>'
             f'    <w:t>{toc_title}</w:t></w:r>'
             f"</w:p>"
@@ -1366,7 +1373,7 @@ def _format_toc_entries(doc: Document) -> None:
             f'  </w:pPr>'
             f'  <w:rPr>'
             f'    <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"'
-            f'               w:eastAsia="宋体"/>'
+            f'               w:eastAsia="{_SONG}"/>'
             f'    <w:sz w:val="24"/><w:szCs w:val="24"/>'
             f'  </w:rPr>'
             f'</w:style>'
@@ -1381,7 +1388,7 @@ def _format_toc_entries(doc: Document) -> None:
             f'  </w:pPr>'
             f'  <w:rPr>'
             f'    <w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"'
-            f'               w:eastAsia="宋体"/>'
+            f'               w:eastAsia="{_SONG}"/>'
             f'    <w:sz w:val="24"/><w:szCs w:val="24"/>'
             f'  </w:rPr>'
             f'</w:style>'
@@ -1410,7 +1417,7 @@ def _format_toc_entries(doc: Document) -> None:
         if ind is not None:
             pPr.remove(ind)
         for run in para.runs:
-            _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+            _set_run_font(run, east_asia=_SONG, ascii="Times New Roman",
                           sz="24", bold=False)
         _set_para_line_spacing_fixed_20pt(pPr)
 
@@ -1427,7 +1434,7 @@ def _format_bibliography_entries(doc: Document) -> None:
         if pStyle.get(qn("w:val")) != "Bibliography":
             continue
         for run in para.runs:
-            _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+            _set_run_font(run, east_asia=_SONG, ascii="Times New Roman",
                           sz="24", bold=False)
         _set_para_line_spacing_fixed_20pt(pPr)
 
@@ -1495,7 +1502,7 @@ def _format_headings_and_body(doc: Document, profile: str = "mainland-fallback")
     See PROFILE_HEADING_FORMATS for per-profile heading sizes and alignments.
     """
     heading_fmt = PROFILE_HEADING_FORMATS.get(profile, PROFILE_HEADING_FORMATS["mainland-fallback"])
-    heading4_ea = heading_fmt.get("heading4_east_asia", "黑体")
+    heading4_ea = heading_fmt.get("heading4_east_asia", _HEI)
     outline_levels = {"Heading1": "0", "Heading2": "1", "Heading3": "2", "Heading4": "3"}
     BODY_STYLES = {"Normal", "BodyText", "FirstParagraph", "First Paragraph"}
     EXCLUDED_BODY = {"Bibliography", "toc 1", "toc 2", "toc 3",
@@ -1518,7 +1525,7 @@ def _format_headings_and_body(doc: Document, profile: str = "mainland-fallback")
                 _set_para_line_spacing_fixed_20pt(pPr)
                 _set_outline_level(pPr, "0")
                 for run in para.runs:
-                    _set_run_font(run, east_asia="黑体", ascii="黑体",
+                    _set_run_font(run, east_asia=_HEI, ascii=_HEI,
                                   sz="32", bold=True)
                 continue
             fmt = heading_fmt[style]
@@ -1528,9 +1535,9 @@ def _format_headings_and_body(doc: Document, profile: str = "mainland-fallback")
             _set_para_line_spacing_fixed_20pt(pPr)
             _set_outline_level(pPr, outline_levels.get(style, "0"))
             # --- run properties (Level 4 may use 楷体 per profile spec) ---
-            heading_font = heading4_ea if style == "Heading4" else "黑体"
+            heading_font = heading4_ea if style == "Heading4" else _HEI
             for run in para.runs:
-                _set_run_font(run, east_asia=heading_font, ascii="黑体",
+                _set_run_font(run, east_asia=heading_font, ascii=_HEI,
                               sz=fmt["sz"], bold=True)
         elif style in BODY_STYLES:
             if style in EXCLUDED_BODY:
@@ -1539,7 +1546,7 @@ def _format_headings_and_body(doc: Document, profile: str = "mainland-fallback")
             _set_para_line_spacing_fixed_20pt(pPr)
             _set_first_line_indent(pPr, chars=2)
             for run in para.runs:
-                _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+                _set_run_font(run, east_asia=_SONG, ascii="Times New Roman",
                               sz="24", bold=False)
 
 
@@ -1597,6 +1604,19 @@ def _set_style_line_spacing_exact(style, twips: str, rule: str = "exact") -> Non
         pPr.append(spacing)
     spacing.set(qn("w:line"), twips)
     spacing.set(qn("w:lineRule"), rule)
+
+
+def _set_style_east_asia_font(style, font_name: str) -> None:
+    element = style.element
+    rPr = element.find(qn("w:rPr"))
+    if rPr is None:
+        rPr = parse_xml(f'<w:rPr {nsdecls("w")}></w:rPr>')
+        element.append(rPr)
+    rFonts = rPr.find(qn("w:rFonts"))
+    if rFonts is None:
+        rFonts = parse_xml(f'<w:rFonts {nsdecls("w")}></w:rFonts>')
+        rPr.append(rFonts)
+    rFonts.set(qn("w:eastAsia"), font_name)
 
 
 def _set_first_line_indent(pPr, chars: int = 2) -> None:
@@ -1938,13 +1958,14 @@ def _replace_para_text(para, new_text: str) -> None:
 # Per-profile validation expectations.
 # Font names are the canonical Chinese names; comparison normalises
 # platform variants (Songti SC → 宋体, Heiti SC → 黑体, Kaiti SC → 楷体,
-# SimSun → 宋体, SimHei → 黑体, KaiTi → 楷体).
+# SimSun → 宋体, SimHei → 黑体, KaiTi → 楷体, STLiti → 隶书,
+# Noto Serif/Sans CJK SC → 宋体/黑体).
 _FONT_ALIASES: dict[str, str] = {
-    "songti sc": "宋体", "simsun": "宋体",
-    "heiti sc": "黑体", "simhei": "黑体",
+    "songti sc": "宋体", "simsun": "宋体", "noto serif cjk sc": "宋体",
+    "heiti sc": "黑体", "simhei": "黑体", "noto sans cjk sc": "黑体",
     "kaiti sc": "楷体", "kaiti": "楷体",
     "times new roman": "times new roman",
-    "隶书": "隶书", "lishu": "隶书",
+    "隶书": "隶书", "lishu": "隶书", "stliti": "隶书",
 }
 
 def _normalise_font(name: str) -> str:
@@ -2278,6 +2299,7 @@ def postprocess(
     doc = Document(str(input_docx))
     try:
         _set_style_line_spacing_exact(doc.styles["Normal"], "400", "exact")
+        _set_style_east_asia_font(doc.styles["Normal"], _SONG)
     except KeyError:
         pass
     fields = {key: value for key, value in (cover_fields or {}).items() if value}

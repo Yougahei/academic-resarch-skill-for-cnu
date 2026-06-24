@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 import zipfile
 
@@ -9,6 +10,7 @@ from docx.oxml.ns import nsdecls, qn
 
 import scripts.build_chinese_reference_docx as build_ref
 import scripts.export_chinese_thesis as export
+from scripts.chinese_fonts import resolve_cjk_font
 from scripts.postprocess_chinese_thesis_docx import (
     _add_section_breaks_and_page_breaks,
     _format_equation_numbers,
@@ -232,6 +234,52 @@ def test_build_pandoc_args_pdf_uses_tex_template(tmp_path: Path) -> None:
     assert str(profile.tex_template) in args
     assert "--pdf-engine" in args
     assert "xelatex" in args
+
+
+def test_build_pandoc_args_pdf_injects_platform_fonts(tmp_path: Path, monkeypatch) -> None:
+    from scripts import chinese_fonts
+
+    monkeypatch.setattr(chinese_fonts, "detect_font_platform", lambda: "windows")
+    profile = export.PROFILES["guangxi-undergrad"]
+    args = export.build_pandoc_args(
+        pandoc="pandoc",
+        input_path=tmp_path / "paper.md",
+        output_path=tmp_path / "paper.pdf",
+        output_format="pdf",
+        profile=profile,
+    )
+    assert "-V" in args
+    expected = f"cjkfont={chinese_fonts.latex_font_vars('windows')['cjkfont']}"
+    assert expected in args
+
+
+def test_build_pandoc_args_latex_injects_platform_fonts(tmp_path: Path, monkeypatch) -> None:
+    from scripts import chinese_fonts
+
+    monkeypatch.setattr(chinese_fonts, "detect_font_platform", lambda: "windows")
+    profile = export.PROFILES["guangxi-undergrad"]
+    args = export.build_pandoc_args(
+        pandoc="pandoc",
+        input_path=tmp_path / "paper.md",
+        output_path=tmp_path / "paper.tex",
+        output_format="latex",
+        profile=profile,
+    )
+    assert "-V" in args
+    expected = f"cjkfont={chinese_fonts.latex_font_vars('windows')['cjkfont']}"
+    assert expected in args
+
+
+def test_build_pandoc_args_docx_does_not_inject_fonts(tmp_path: Path) -> None:
+    profile = export.PROFILES["guangxi-undergrad"]
+    args = export.build_pandoc_args(
+        pandoc="pandoc",
+        input_path=tmp_path / "paper.md",
+        output_path=tmp_path / "paper.docx",
+        output_format="docx",
+        profile=profile,
+    )
+    assert "-V" not in args
 
 
 def _write_minimal_generated_docx(path: Path, include_toc: bool = True) -> None:
@@ -824,7 +872,7 @@ def test_format_table_captions_and_content_cell_format() -> None:
                             if rFonts is not None:
                                 ea = rFonts.get(qn("w:eastAsia"))
                                 if ea:
-                                    assert ea == "宋体", f"cell font should be 宋体, got {ea}"
+                                    assert ea == resolve_cjk_font("宋体"), f"cell font should be {resolve_cjk_font('宋体')}, got {ea}"
 
 
 def test_format_table_captions_and_content_multiple() -> None:
@@ -1358,3 +1406,44 @@ def test_postprocess_cover_compact_no_extra_blank_paragraphs(tmp_path: Path) -> 
         if len(row.cells) >= 1 and "课题名称" in row.cells[0].text
     )
     assert title_label_rows == 1, f"课题名称 table should have 1 row, got {title_label_rows}"
+
+
+def test_postprocess_writes_platform_fonts(tmp_path: Path) -> None:
+    input_docx = tmp_path / "input.docx"
+    output_docx = tmp_path / "output.docx"
+    _write_minimal_generated_docx(input_docx)
+    profile = export.PROFILES["guangxi-undergrad"]
+    assert profile.cover_docx is not None
+
+    postprocess(
+        input_docx=input_docx,
+        output_docx=output_docx,
+        profile=profile.id,
+        cover_docx=profile.cover_docx,
+        cover_fields={
+            "title": "跨平台字体测试",
+            "advisor": "王老师",
+        },
+    )
+
+    doc = Document(str(output_docx))
+    advisor_ea = None
+    for table in doc.tables:
+        for row in table.rows:
+            if len(row.cells) < 2:
+                continue
+            label = re.sub(r"[\s:：]+", "", row.cells[0].text)
+            if label in ("指导老师", "指导教师"):
+                for para in row.cells[1].paragraphs:
+                    for run in para.runs:
+                        rPr = run._element.find(qn("w:rPr"))
+                        if rPr is not None:
+                            rFonts = rPr.find(qn("w:rFonts"))
+                            if rFonts is not None:
+                                ea = rFonts.get(qn("w:eastAsia"))
+                                if ea:
+                                    advisor_ea = ea
+    assert advisor_ea is not None, "advisor cell run should have an east-asia font"
+    assert advisor_ea == resolve_cjk_font("宋体"), (
+        f"advisor font should be {resolve_cjk_font('宋体')}, got {advisor_ea}"
+    )
