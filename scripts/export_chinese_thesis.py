@@ -402,16 +402,40 @@ def _render_yaml_metadata(metadata: dict[str, str]) -> str:
     return "\n".join(lines) + "\n\n"
 
 
+# Alias map for backward-compatible cover field names.
+_COVER_FIELD_ALIASES: dict[str, str] = {
+    "supervisor": "advisor",
+    "class": "class-name",
+    "student_number": "student-id",
+    "student_id": "student-id",
+    "supervisor_name": "advisor",
+    "college_name": "college",
+    "department": "college",
+    "school": "college",
+}
+
+
+def _normalize_cover_fields(fields: dict[str, str]) -> dict[str, str]:
+    """Normalize alias field names to canonical keys defined in COVER_FIELD_KEYS."""
+    normalized = {}
+    for key, value in fields.items():
+        canonical = _COVER_FIELD_ALIASES.get(key, key)
+        normalized[canonical] = value
+    return normalized
+
+
 def prepare_markdown_for_export(input_path: Path, output_dir: Path) -> PreparedMarkdown:
     """Normalize thesis metadata and remove title/abstract blocks from body."""
     text = input_path.read_text(encoding="utf-8")
     frontmatter = _parse_simple_frontmatter(text)
+    frontmatter = _normalize_cover_fields(frontmatter)
     body = _strip_frontmatter(text)
     title = frontmatter.get("title") or _find_markdown_h1(body)
     inline_metadata, body_without_abstracts = extract_inline_abstract_blocks(body)
+    retained_keys = set(THESIS_METADATA_KEYS) | set(COVER_FIELD_KEYS)
     metadata = {
         **inline_metadata,
-        **{key: value for key, value in frontmatter.items() if key in THESIS_METADATA_KEYS},
+        **{key: value for key, value in frontmatter.items() if key in retained_keys},
     }
     if title:
         metadata["title"] = title
@@ -444,7 +468,7 @@ def validate_abstract_metadata(metadata: dict[str, str]) -> None:
 def extract_cover_fields(input_path: Path, profile: ExportProfile) -> dict[str, str]:
     """Extract cover metadata from Markdown frontmatter and H1 fallback."""
     text = input_path.read_text(encoding="utf-8")
-    fields = _parse_simple_frontmatter(text)
+    fields = _normalize_cover_fields(_parse_simple_frontmatter(text))
     title = fields.get("title") or _find_markdown_h1(text)
     if title:
         fields["title"] = title
@@ -453,7 +477,9 @@ def extract_cover_fields(input_path: Path, profile: ExportProfile) -> dict[str, 
 
 
 def cover_fields_from_metadata(metadata: dict[str, str], profile: ExportProfile) -> dict[str, str]:
-    fields = {key: value for key, value in metadata.items() if key in COVER_FIELD_KEYS and value}
+    fields = _normalize_cover_fields(
+        {key: value for key, value in metadata.items() if key in COVER_FIELD_KEYS and value}
+    )
     fields.setdefault("paper-type", profile.paper_type_label)
     return fields
 
