@@ -92,59 +92,29 @@ def _write_ja_readme(root: Path, version: str) -> None:
 # release-block list as zh-TW, four Simplified-Chinese localized mode
 # headings, four skill-detail headings, and the Simplified-Chinese DOCX line.
 ZH_CN_README_TEMPLATE = """\
-# Academic Research Skills
+# Academic Research Skills — 中国高校论文版
 
-[![Version](https://img.shields.io/badge/version-v{ver}-blue)](https://github.com/Imbad0202/academic-research-skills/releases/tag/v{ver})
+[![Version](https://img.shields.io/badge/version-v{ver}-blue)](https://github.com/Yougahei/acdemic-resarch-skill-for-CNU/releases/tag/v{ver})
 
-#### Deep Research（深度研究，7 种模式）
-- review mode
+## 相比原版的新增功能
 
-#### Academic Paper（学术论文撰写，10 种模式）
-- outline-only mode
-- abstract-only mode
-- disclosure mode
+- 中国高校论文格式支持
+- DOCX 后处理管线
 
-#### Academic Paper Reviewer（论文审查，6 种模式）
-- calibration mode
+## 四个核心 Skill
 
-#### Academic Pipeline（全流程调度器）
+## 安装
 
-### Deep Research (v2.9.4)
-### Academic Paper (v3.2.0)
-### Academic Paper Reviewer (v1.10.0)
-### Academic Pipeline (v{ver})
+## 使用方式
 
-### 支持的输出格式
+## 中国高校论文格式支持
 
-- DOCX（Pandoc 可用时）
+## 上游版本日志
 
-## 更新纪录
-
-### v3.12.0（2026-06-08）— latest entry
-### v3.11.1（2026-06-06）— prior patch
-### v3.11.0（2026-06-04）— prior patch
-### v3.10.0（2026-06-01）— prior minor
-### v3.9.4.2（2026-05-19）— CI discipline hotfix
-### v3.9.4.1（2026-05-19）— previous hotfix
-### v3.9.4（2026-05-18）— temporal verification
-### v3.9.1（2026-05-18）— client hardening
-### v3.9.0（2026-05-17）— triangulation
-### v3.8.0（2026-05-16）— L3 audit
-### v3.7.0（2026-05-05）— plugin packaging
-### v3.6.8（2026-05-03）— generator-evaluator
-### v3.6.7（2026-04-30）— pattern protection
-### v3.6.5（2026-04-27）— corpus consumer
-### v3.6.4（2026-04-25）— corpus input port
-### v3.6.3（2026-04-23）— passport reset
-### v3.6.2（2026-04-23）— reviewer sprint
-### v3.5.1（2026-04-22）— reading-check probe
-### v3.5.0（2026-04-21）— collaboration depth
-### v3.4.0（2026-04-20）— compliance agent
-### v3.3.6 (2026-04-15) — README streamlining
-### v3.3.5 (2026-04-15)
-### v3.3.4 (2026-04-15) — changelog sync
-### v3.3.3 (2026-04-15) — release prep
-### v3.3.2 (2026-04-15) — data access levels
+### v3.12.0 (2026-06-08) — latest entry
+### v3.11.1 (2026-06-06) — prior patch
+### v3.11.0 (2026-06-04) — prior patch
+### v3.10.0 (2026-06-01) — prior minor
 """
 
 

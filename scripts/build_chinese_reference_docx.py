@@ -29,6 +29,28 @@ class DocxProfile:
     normal_east_asia: str = "宋体"
     heading_east_asia: str = "黑体"
     latin: str = "Times New Roman"
+    # Paper size in hundredths of mm (page width, page height).
+    # Default: A4 (210mm × 297mm = 11906 × 16838 twips).
+    # 16开: 184mm × 260mm = 10430 × 14740 twips.
+    paper_w_twips: int = 11906
+    paper_h_twips: int = 16838
+    # Margins in hundredths of mm for w:pgMar
+    margin_top: int = 2540  # 2.54 cm
+    margin_bottom: int = 2540
+    margin_left: int = 2540
+    margin_right: int = 2540
+    margin_header: int = 720
+    margin_footer: int = 720
+
+
+# Convert cm to EMU
+def _cm_to_emu(cm: float) -> int:
+    return int(cm * 360000)
+
+
+def _hundredths_mm_to_twips(val: int) -> int:
+    """Convert hundredths of mm to twips for OOXML pgMar attributes."""
+    return int(val * 1440 / 2540)
 
 
 PROFILES: dict[str, DocxProfile] = {
@@ -36,16 +58,29 @@ PROFILES: dict[str, DocxProfile] = {
         id="mainland-fallback",
         filename="mainland_fallback_reference.docx",
         title="Mainland China University Thesis Fallback Reference DOCX",
+        margin_left=2540,
+        margin_right=2540,
     ),
     "guangxi-undergrad": DocxProfile(
         id="guangxi-undergrad",
         filename="guangxi_undergrad_reference.docx",
         title="Guangxi University Undergraduate Thesis Reference DOCX",
+        # Guangxi spec: top/bottom 2.54 cm, left/right 2.2 cm
+        margin_left=2200,   # 2.2 cm in hundredths of mm
+        margin_right=2200,  # 2.2 cm
     ),
     "sichuan-grad": DocxProfile(
         id="sichuan-grad",
         filename="sichuan_grad_reference.docx",
         title="Sichuan University Graduate Dissertation Reference DOCX",
+        # 16开: 184mm × 260mm
+        paper_w_twips=10430,
+        paper_h_twips=14740,
+        # Spec: top/bottom 2.5 cm, left 2.8 cm, right 2.2 cm
+        margin_top=2500,
+        margin_bottom=2500,
+        margin_left=2800,
+        margin_right=2200,
     ),
 }
 
@@ -220,6 +255,36 @@ def patch_styles_xml(styles_xml: bytes, profile: DocxProfile) -> bytes:
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
+def patch_document_xml(document_xml: bytes, profile: DocxProfile) -> bytes:
+    """Patch the document body's sectPr with profile-specific page size and margins.
+
+    Margins in DocxProfile are stored in hundredths of mm; OOXML pgMar uses
+    twips (1/20 point, 1440 per inch).  Paper size is stored in twips directly.
+    """
+    root = ET.fromstring(document_xml)
+    body = root.find(f"{{{NS['w']}}}body")
+    if body is None:
+        return document_xml
+
+    sect_pr = body.find(f"{{{NS['w']}}}sectPr")
+    if sect_pr is None:
+        return document_xml
+
+    # Paper size — necessary for 16开 profiles like Sichuan.
+    pg_sz = _ensure(sect_pr, "pgSz")
+    _set_attr(pg_sz, "w", str(profile.paper_w_twips))
+    _set_attr(pg_sz, "h", str(profile.paper_h_twips))
+
+    pg_mar = _ensure(sect_pr, "pgMar")
+    _set_attr(pg_mar, "top", str(_hundredths_mm_to_twips(profile.margin_top)))
+    _set_attr(pg_mar, "bottom", str(_hundredths_mm_to_twips(profile.margin_bottom)))
+    _set_attr(pg_mar, "left", str(_hundredths_mm_to_twips(profile.margin_left)))
+    _set_attr(pg_mar, "right", str(_hundredths_mm_to_twips(profile.margin_right)))
+    _set_attr(pg_mar, "header", str(profile.margin_header))
+    _set_attr(pg_mar, "footer", str(profile.margin_footer))
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
 def build_reference_docx(profile: DocxProfile, output_dir: Path, pandoc: str) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     output = output_dir / profile.filename
@@ -239,6 +304,8 @@ def build_reference_docx(profile: DocxProfile, output_dir: Path, pandoc: str) ->
                 data = src.read(info.filename)
                 if info.filename == "word/styles.xml":
                     data = patch_styles_xml(data, profile)
+                elif info.filename == "word/document.xml":
+                    data = patch_document_xml(data, profile)
                 dst.writestr(info, data)
         output.write_bytes(patched.read_bytes())
     return output

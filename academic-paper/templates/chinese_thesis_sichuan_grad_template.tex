@@ -15,15 +15,18 @@
 
 % ===== Fonts =====
 % Spec: 宋体(SimSun) body, 黑体(SimHei) headings, 楷体(KaiTi) names + level 4
-% macOS: Songti SC / Heiti SC / Kaiti SC
-\setmainfont{Times New Roman}
-\setCJKmainfont{Songti SC}[
-  BoldFont=Heiti SC,
-  ItalicFont=Kaiti SC,
-  BoldItalicFont=Heiti SC]
-\setCJKsansfont{Heiti SC}[BoldFont=Heiti SC]
-\setCJKmonofont{Kaiti SC}[BoldFont=Heiti SC]
-\setmonofont{Courier New}
+% macOS: Songti SC / Heiti SC / Kaiti SC; Windows: SimSun / SimHei / KaiTi
+% Override via Pandoc -V: -V mainfont=... -V cjkfont=...
+\setmainfont{$if(mainfont)$$mainfont$$else$Times New Roman$endif$}
+\setCJKmainfont{$if(cjkfont)$$cjkfont$$else$Songti SC$endif$}[
+  BoldFont=$if(cjkboldfont)$$cjkboldfont$$else$Heiti SC$endif$,
+  ItalicFont=$if(cjkitalicfont)$$cjkitalicfont$$else$Kaiti SC$endif$,
+  BoldItalicFont=$if(cjkboldfont)$$cjkboldfont$$else$Heiti SC$endif$]
+\setCJKsansfont{$if(cjksansfont)$$cjksansfont$$else$Heiti SC$endif$}[
+  BoldFont=$if(cjkboldfont)$$cjkboldfont$$else$Heiti SC$endif$]
+\setCJKmonofont{$if(cjkmonofont)$$cjkmonofont$$else$Kaiti SC$endif$}[
+  BoldFont=$if(cjkboldfont)$$cjkboldfont$$else$Heiti SC$endif$]
+\setmonofont{$if(monofont)$$monofont$$else$Courier New$endif$}
 
 % ===== Line Spacing =====
 % Spec: fixed 20pt throughout

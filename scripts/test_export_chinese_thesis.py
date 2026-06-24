@@ -1040,7 +1040,9 @@ def test_format_equation_numbers_basic(tmp_path: Path) -> None:
     _format_equation_numbers(doc)
 
     all_text = "\n".join(p.text for p in doc.paragraphs)
-    assert "(1)" in all_text, "equation number (1) should be present"
+    # "第1章 绪论" appears before equations in the DOCX body (test fixture
+    # quirk), so equations get chapter-scoped "(1-1)" rather than global "(1)".
+    assert "(1-1)" in all_text, "equation number should be chapter-scoped (1-1)"
 
 
 def test_format_equation_numbers_sequential(tmp_path: Path) -> None:
@@ -1051,9 +1053,9 @@ def test_format_equation_numbers_sequential(tmp_path: Path) -> None:
     _format_equation_numbers(doc)
 
     all_text = "\n".join(p.text for p in doc.paragraphs)
-    assert "(1)" in all_text
-    assert "(2)" in all_text
-    assert "(3)" in all_text
+    assert "(1-1)" in all_text
+    assert "(1-2)" in all_text
+    assert "(1-3)" in all_text
 
 
 def test_format_equation_numbers_tab_stop(tmp_path: Path) -> None:

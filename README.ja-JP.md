@@ -1,8 +1,7 @@
 # Claude Code 向け Academic Research Skills
 
-[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Imbad0202/academic-research-skills/releases/tag/v3.12.0)
+[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Yougahei/acdemic-resarch-skill-for-CNU/releases/tag/v3.12.0)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](https://creativecommons.org/licenses/by-nc/4.0/)
-[![Sponsor](https://img.shields.io/badge/sponsor-Buy%20Me%20a%20Coffee-orange?logo=buy-me-a-coffee)](https://buymeacoffee.com/crucify020v)
 
 [English](README.md) | [简体中文版](README.zh-CN.md) | [繁體中文版](README.zh-TW.md)
 
@@ -11,8 +10,8 @@
 **30秒でインストール**（Claude Code CLI / VS Code / JetBrains、v3.7.0+）:
 
 ```text
-/plugin marketplace add Imbad0202/academic-research-skills
-/plugin install academic-research-skills
+/plugin marketplace add Yougahei/acdemic-resarch-skill-for-CNU
+/plugin install acdemic-resarch-skill-for-CNU
 ```
 
 その後、`/ars-plan` を試してソクラテス式対話で論文構成を整理するか、前提条件と従来のシンボリックリンク方式については [クイックインストール](#クイックインストール) を参照してください。
@@ -52,8 +51,8 @@ v3.3 は [**PaperOrchestra**](https://arxiv.org/abs/2604.05018)（Song, Song, Pf
 **プラグインインストール（v3.7.0+、推奨）:**
 
 ```text
-/plugin marketplace add Imbad0202/academic-research-skills
-/plugin install academic-research-skills
+/plugin marketplace add Yougahei/acdemic-resarch-skill-for-CNU
+/plugin install acdemic-resarch-skill-for-CNU
 ```
 
 **動作確認:** `/ars-plan` を実行して取り組んでいる論文について説明してください — ARS がソクラテス式対話を開始し、章構成をマップします。代わりに単発テストを行うには、`/ars-lit-review "your topic"` を試してください。

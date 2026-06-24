@@ -339,6 +339,8 @@ Issue-driven development：每个迭代从 GitHub Issue 开始，每个分支一
 - Guidance + interpretive layer (#274/#273/#367)
 - Negative scope + release discipline
 
+Key contract: `experiment_intake_declaration` — a fail-closed Stage 1 declaration that makes "did you run experiments" an explicit up-front decision. A passport without this declaration (when treated as post-#260) is a gate FAIL. Even literature-only pipelines must carry `{status: no_experiments_declared}`. See `shared/handoff_schemas.md` §Experiment Provenance Intake.
+
 ### v3.11.1 (2026-06-06)
 - Bug fix: citation gate edge case when arXiv API returns 429
 
@@ -396,6 +398,8 @@ Issue-driven development：每个迭代从 GitHub Issue 开始，每个分支一
 
 ### v3.5.1 (2026-04-22)
 - Opt-in Socratic reading-check probe
+
+Key contract: `ARS_SOCRATIC_READING_PROBE=1` enables a one-time honesty probe during goal-oriented Socratic sessions. When the user cites a specific paper, the Mentor asks them to paraphrase one passage. Decline is logged without penalty. Default OFF. See `deep-research/agents/socratic_mentor_agent.md` §"Optional Reading Probe Layer".
 
 ### v3.5.0 (2026-04-21)
 - Collaboration Depth Observer

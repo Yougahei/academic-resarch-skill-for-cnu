@@ -1,8 +1,7 @@
 # Academic Research Skills for Claude Code
 
-[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Imbad0202/academic-research-skills/releases/tag/v3.12.0)
+[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Yougahei/acdemic-resarch-skill-for-CNU/releases/tag/v3.12.0)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](https://creativecommons.org/licenses/by-nc/4.0/)
-[![Sponsor](https://img.shields.io/badge/sponsor-Buy%20Me%20a%20Coffee-orange?logo=buy-me-a-coffee)](https://buymeacoffee.com/crucify020v)
 
 [English](README.md) | [简体中文版](README.zh-CN.md) | [日本語版](README.ja-JP.md)
 
@@ -11,8 +10,8 @@
 **30 秒安裝**（Claude Code CLI / VS Code / JetBrains，v3.7.0+）：
 
 ```text
-/plugin marketplace add Imbad0202/academic-research-skills
-/plugin install academic-research-skills
+/plugin marketplace add Yougahei/acdemic-resarch-skill-for-CNU
+/plugin install acdemic-resarch-skill-for-CNU
 ```
 
 裝完跑 `/ars-plan`，ARS 會用蘇格拉底對話幫你規劃章節結構。需要前置條件或傳統 symlink 安裝請看 [快速安裝](#快速安裝)。
@@ -52,8 +51,8 @@ v3.3 的靈感來自 [**PaperOrchestra**](https://arxiv.org/abs/2604.05018)（So
 **Plugin 安裝（v3.7.0+，推薦）：**
 
 ```text
-/plugin marketplace add Imbad0202/academic-research-skills
-/plugin install academic-research-skills
+/plugin marketplace add Yougahei/acdemic-resarch-skill-for-CNU
+/plugin install acdemic-resarch-skill-for-CNU
 ```
 
 **驗證可用：** 跑 `/ars-plan` 並描述你正在寫的論文，ARS 會用蘇格拉底對話幫你規劃章節結構。想要單次測試的話改跑 `/ars-lit-review "你的主題"`。

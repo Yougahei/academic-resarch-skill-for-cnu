@@ -40,6 +40,49 @@ PROFILE_TOC_TITLE: dict[str, str] = {
     "sichuan-grad": "目　录",
 }
 
+# Margins in twips (1/20 point; 1440 twips = 1 inch = 2.54 cm)
+PROFILE_MARGINS: dict[str, dict[str, int]] = {
+    "mainland-fallback": {"top": 1440, "bottom": 1440, "left": 1440, "right": 1440, "header": 720, "footer": 720},
+    # Guangxi: A4, top/bottom 2.54 cm, left/right 2.2 cm
+    "guangxi-undergrad": {"top": 1440, "bottom": 1440, "left": 1247, "right": 1247, "header": 720, "footer": 720},
+    # Sichuan: 16开 (184mm×260mm), top/bottom 2.5 cm, left 2.8 cm, right 2.2 cm
+    "sichuan-grad":     {"top": 1417, "bottom": 1417, "left": 1587, "right": 1247, "header": 720, "footer": 720},
+}
+
+# Paper sizes in twips (1440 twips = 1 inch).
+PROFILE_PAPER_SIZES: dict[str, dict[str, int]] = {
+    "mainland-fallback": {"w": 11906, "h": 16838},  # A4
+    "guangxi-undergrad": {"w": 11906, "h": 16838},  # A4
+    "sichuan-grad":     {"w": 10430, "h": 14740},  # 16开 184mm × 260mm
+}
+
+# Profile-specific heading formats. All sizes in half-points (12pt = 24).
+# See _format_headings_and_body() for the consumer.
+PROFILE_HEADING_FORMATS: dict[str, dict[str, dict[str, str]]] = {
+    "guangxi-undergrad": {
+        "Heading1": {"sz": "36", "align": "center", "before": "400", "after": "400"},
+        "Heading2": {"sz": "30", "align": "left",   "before": "0",   "after": "0"},
+        "Heading3": {"sz": "28", "align": "left",   "before": "0",   "after": "0"},
+        "Heading4": {"sz": "24", "align": "left",   "before": "0",   "after": "0"},
+        "heading4_east_asia": "黑体",
+    },
+    "sichuan-grad": {
+        # Sichan Level 1: 小三黑体(15pt), left-aligned
+        "Heading1": {"sz": "30", "align": "left",  "before": "0",   "after": "0"},
+        "Heading2": {"sz": "28", "align": "left",  "before": "0",   "after": "0"},
+        "Heading3": {"sz": "24", "align": "left",  "before": "0",   "after": "0"},
+        "Heading4": {"sz": "24", "align": "left",  "before": "0",   "after": "0"},
+        "heading4_east_asia": "楷体",  # Sichuan Level 4 uses 楷体, not 黑体
+    },
+    "mainland-fallback": {
+        "Heading1": {"sz": "36", "align": "center", "before": "400", "after": "400"},
+        "Heading2": {"sz": "30", "align": "left",   "before": "0",   "after": "0"},
+        "Heading3": {"sz": "28", "align": "left",   "before": "0",   "after": "0"},
+        "Heading4": {"sz": "24", "align": "left",   "before": "0",   "after": "0"},
+        "heading4_east_asia": "黑体",
+    },
+}
+
 # Import PROFILES lazily so the module can be used standalone.
 _PROFILES: dict | None = None
 
@@ -153,8 +196,46 @@ def _strip_section_properties(element) -> None:
             parent.remove(sect_pr)
 
 
-def _insert_cover(doc: Document, cover_docx: Path, cover_fields: dict[str, str]) -> int:
-    """Prepend a filled DOCX cover template before the generated thesis body."""
+def _strip_comment_markers(element) -> None:
+    """Remove comment markers from a cover element before inserting into the
+    output document.  Cover template comments are editorial metadata that do
+    not belong in the student's final thesis, and stripping them here
+    eliminates any dangling-comment-marker risk."""
+    for marker in list(element.findall(".//" + qn("w:commentRangeStart"))):
+        parent = marker.getparent()
+        if parent is not None:
+            parent.remove(marker)
+    for marker in list(element.findall(".//" + qn("w:commentRangeEnd"))):
+        parent = marker.getparent()
+        if parent is not None:
+            parent.remove(marker)
+    # w:commentReference sits inside w:rPr — remove the whole rPr if it only had this child
+    for marker in list(element.findall(".//" + qn("w:commentReference"))):
+        parent = marker.getparent()   # w:rPr
+        gp = parent.getparent() if parent is not None else None
+        parent.remove(marker)
+        # If rPr is now empty, remove it too.
+        if parent is not None and len(parent) == 0 and gp is not None:
+            gp.remove(parent)
+
+
+def _insert_cover(
+    doc: Document,
+    cover_docx: Path,
+    cover_fields: dict[str, str],
+    margins: dict[str, int] | None = None,
+    paper_size: dict[str, int] | None = None,
+) -> int:
+    """Prepend a filled DOCX cover template, then insert a section break.
+
+    The section break (not just a page break) creates a new section for
+    the abstract pages that follow, allowing independent page numbering.
+    """
+    if margins is None:
+        margins = {"top": 1440, "bottom": 1440, "left": 1440, "right": 1440,
+                    "header": 720, "footer": 720}
+    if paper_size is None:
+        paper_size = {"w": 11906, "h": 16838}  # A4
     cover_doc = Document(str(cover_docx))
     _fill_cover_doc(cover_doc, cover_fields)
 
@@ -163,15 +244,26 @@ def _insert_cover(doc: Document, cover_docx: Path, cover_fields: dict[str, str])
     for element in _body_children_without_section(cover_doc):
         copied = deepcopy(element)
         _strip_section_properties(copied)
+        _strip_comment_markers(copied)
         body.insert(insert_at, copied)
         insert_at += 1
 
-    page_break = parse_xml(
+    # Section break between cover and abstract — starts a new section with
+    # profile-specific margins and Roman page numbering (hidden on cover,
+    # visible on abstract pages).
+    sect_break = parse_xml(
         f'<w:p {nsdecls("w")}>'
-        f'  <w:r><w:br w:type="page"/></w:r>'
+        f'  <w:pPr>'
+        f'    <w:sectPr>'
+        f'      <w:pgSz w:w="{paper_size["w"]}" w:h="{paper_size["h"]}"/>'
+        f'      <w:pgMar w:top="{margins["top"]}" w:bottom="{margins["bottom"]}"'
+        f'              w:left="{margins["left"]}" w:right="{margins["right"]}"'
+        f'              w:header="{margins["header"]}" w:footer="{margins["footer"]}"/>'
+        f'    </w:sectPr>'
+        f'  </w:pPr>'
         f"</w:p>"
     )
-    body.insert(insert_at, page_break)
+    body.insert(insert_at, sect_break)
     return insert_at + 1
 
 
@@ -188,15 +280,30 @@ def _merge_cover_package_resources(output_docx: Path, cover_docx: Path) -> None:
         cover_rels_raw = cz.read("word/_rels/document.xml.rels")
         cover_ct_raw = cz.read("[Content_Types].xml")
         cover_media = {name: cz.read(name) for name in cz.namelist() if name.startswith("word/media/")}
+        # Pre-read any comment parts so they are available after the with block closes.
+        cover_comment_parts: dict[str, bytes] = {}
+        for name in cz.namelist():
+            if name.startswith("word/comment"):
+                cover_comment_parts[name] = cz.read(name)
 
     # 2. Parse cover relationships to find image/comment rels.
     NS_REL = "http://schemas.openxmlformats.org/package/2006/relationships"
     cover_rels = etree.fromstring(cover_rels_raw)
     cover_image_rels: list[tuple[str, str]] = []
     IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+    COMMENT_REL_TYPES = {
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentsExtended",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentsIds",
+    }
     for child in cover_rels:
-        if child.get("Type") == IMAGE_REL_TYPE:
-            cover_image_rels.append((child.get("Id", ""), child.get("Target", "")))
+        rel_type = child.get("Type", "")
+        target = child.get("Target", "")
+        if rel_type == IMAGE_REL_TYPE:
+            cover_image_rels.append((child.get("Id", ""), target))
+        elif rel_type in COMMENT_REL_TYPES:
+            # Track the comment relationship for rId remapping.
+            cover_image_rels.append((child.get("Id", ""), target))
 
     if not cover_image_rels:
         return
@@ -277,6 +384,16 @@ def _merge_cover_package_resources(output_docx: Path, cover_docx: Path) -> None:
         "wmf": "image/x-wmf",
         "emf": "image/x-emf",
     }
+    # Copy content-type entries for comment parts directly from the cover's
+    # [Content_Types].xml — the cover document already has the correct MIME types.
+    cover_ct = etree.fromstring(cover_ct_raw)
+    for child in cover_ct:
+        if child.tag == f"{{{CT_NS}}}Override":
+            part = child.get("PartName", "")
+            if any(part.endswith(p) for p in ("comments.xml", "commentsExtended.xml", "commentsIds.xml")):
+                if part not in known_parts:
+                    output_ct.append(deepcopy(child))
+                    known_parts.add(part)
     for name in sorted(cover_media):
         part_name = f"/{name}"
         if part_name in known_parts:
@@ -304,6 +421,7 @@ def _merge_cover_package_resources(output_docx: Path, cover_docx: Path) -> None:
             "word/_rels/document.xml.rels": output_rels_bytes,
             "[Content_Types].xml": output_ct_bytes,
             **cover_media,
+            **cover_comment_parts,
         },
     )
 
@@ -913,11 +1031,29 @@ def _format_figure_captions(doc: Document) -> None:
         body.insert(fig_idx, parse_xml(blank))
 
 
-def _format_equation_numbers(doc: Document) -> None:
-    """Add sequential equation numbers at the right margin for display equations.
+def _get_paragraph_all_text(elem) -> str:
+    """Extract all text from a paragraph including OMML math text (m:t)."""
+    parts: list[str] = []
+    for child in elem.iter():
+        local = child.tag.rsplit("}", 1)[-1]  # strip namespace
+        if local == "t" and child.text:
+            parts.append(child.text)
+    return "".join(parts)
 
-    Pandoc converts $$...$$ to w:p containing m:oMathPara. This function adds
-    right-aligned equation numbers on the same line via a right tab stop.
+
+def _format_equation_numbers(doc: Document) -> None:
+    """Add chapter-scoped equation numbers at the right margin.
+
+    Equations before the first chapter heading use global numbers:
+      (1), (2), ...
+
+    Equations after a chapter heading use chapter-scoped numbers with
+    the chapter counter reset at each heading:
+      (1-1), (1-2), …, (2-1), (2-2), …
+
+    Equations with an existing \\tag{...} or a matching (N-N) label are
+    skipped (preserving authored tags).  Appendix chapters use letter
+    prefixes: (A-1), (B-1), …
     """
     body = doc.element.body
 
@@ -949,16 +1085,48 @@ def _format_equation_numbers(doc: Document) -> None:
     if right_tab_pos <= left_margin:
         right_tab_pos = 9638  # sensible fallback
 
-    eq_counter = 0
+    chapter_counter = 0
+    equation_counter = 0
+    appendix_counter = 0
 
     for elem in body:
         if elem.tag != qn("w:p"):
             continue
+
+        # Detect chapter heading boundaries to reset equation counter
+        texts = elem.findall(".//" + qn("w:t"))
+        text = "".join(t.text or "" for t in texts).strip()
+        if _is_chapter_heading(text):
+            equation_counter = 0
+            normalized = re.sub(r"\s+", "", text)
+            if normalized.startswith("附录"):
+                appendix_counter += 1
+            elif re.match(r"^第[一二三四五六七八九十\d]+章", normalized):
+                chapter_counter += 1
+            # 参考文献/致谢: counter reset only, no chapter increment
+            continue
+
         omath_para = elem.find(qn("m:oMathPara"))
         if omath_para is None:
             continue
 
-        eq_counter += 1
+        # Skip equations that already carry an authored tag
+        all_text = _get_paragraph_all_text(elem)
+        if re.search(r'\\tag\s*\{', all_text):
+            continue
+        if re.search(r'\([\dA-Z]+-\d+\)', all_text):
+            continue
+
+        equation_counter += 1
+
+        # Generate chapter-scoped or global number
+        if appendix_counter > 0:
+            prefix = chr(ord("A") + appendix_counter - 1)
+            num_text = f"({prefix}-{equation_counter})"
+        elif chapter_counter > 0:
+            num_text = f"({chapter_counter}-{equation_counter})"
+        else:
+            num_text = f"({equation_counter})"
 
         # Add right-aligned tab stop in paragraph properties
         pPr = elem.find(qn("w:pPr"))
@@ -985,7 +1153,6 @@ def _format_equation_numbers(doc: Document) -> None:
             spacing.set(qn("w:lineRule"), "exact")
 
         # Insert tab character + equation number after oMathPara
-        num_text = f"({eq_counter})"
         run_xml = (
             f'<w:r {nsdecls("w")}>'
             f'  <w:rPr>'
@@ -1018,17 +1185,7 @@ def _add_toc(doc: Document, toc_title: str) -> None:
             toc_heading = para
             break
 
-    # Find the section-break paragraph that separates front matter from body
-    sect_break_idx = None
-    for i, elem in enumerate(children):
-        if elem.tag != qn("w:p"):
-            continue
-        pPr = elem.find(qn("w:pPr"))
-        if pPr is not None and pPr.find(qn("w:sectPr")) is not None:
-            sect_break_idx = i
-            break
-
-    # Find first chapter heading (fallback for insert position)
+    # Find first chapter heading and the section break before it (body section break)
     first_chap_idx = None
     for i, elem in enumerate(children):
         if elem.tag != qn("w:p") or _is_toc_paragraph(elem):
@@ -1038,6 +1195,20 @@ def _add_toc(doc: Document, toc_title: str) -> None:
         if _is_chapter_heading(text):
             first_chap_idx = i
             break
+
+    # Find the section break that separates front matter from body — the one
+    # that comes right before the first chapter heading (not the cover→abstract
+    # section break).
+    sect_break_idx = None
+    if first_chap_idx is not None:
+        for i in range(first_chap_idx - 1, -1, -1):
+            elem = children[i]
+            if elem.tag != qn("w:p"):
+                continue
+            pPr = elem.find(qn("w:pPr"))
+            if pPr is not None and pPr.find(qn("w:sectPr")) is not None:
+                sect_break_idx = i
+                break
 
     if toc_heading is not None:
         # Existing heading — insert TOC field after it, ensure break after
@@ -1237,22 +1408,14 @@ def _reorder_bibliography_before_thanks(doc: Document) -> None:
         body.insert(children.index(children[thanks_heading_idx]), elem)
 
 
-def _format_headings_and_body(doc: Document) -> None:
-    """Format headings and body paragraphs per Guangxi heading hierarchy.
+def _format_headings_and_body(doc: Document, profile: str = "mainland-fallback") -> None:
+    """Format headings and body paragraphs per profile-specific heading hierarchy.
 
-    Level 1 (Heading1 / 第一章): 黑体 小二(18pt), centered, one blank line before/after
-    Level 2 (Heading2 / 1.1):     黑体 小三(15pt), left-aligned, no extra space
-    Level 3 (Heading3 / 1.1.1):   黑体 四号(14pt), left-aligned, no extra space
-    Level 4 (Heading4 / 1.1.1.1): 黑体 小四(12pt), left-aligned, no extra space
-    Body (Normal/BodyText/FirstParagraph): 宋体 小四(12pt), fixed 20pt, first-line indent 2 chars
+    See PROFILE_HEADING_FORMATS for per-profile heading sizes and alignments.
     """
-    HEADING_FMT: dict[str, dict[str, str]] = {
-        "Heading1": {"sz": "36", "align": "center", "before": "400", "after": "400"},
-        "Heading2": {"sz": "30", "align": "left",   "before": "0",   "after": "0"},
-        "Heading3": {"sz": "28", "align": "left",   "before": "0",   "after": "0"},
-        "Heading4": {"sz": "24", "align": "left",   "before": "0",   "after": "0"},
-    }
-    BODY_STYLES = {"Normal", "BodyText", "FirstParagraph"}
+    heading_fmt = PROFILE_HEADING_FORMATS.get(profile, PROFILE_HEADING_FORMATS["mainland-fallback"])
+    heading4_ea = heading_fmt.get("heading4_east_asia", "黑体")
+    BODY_STYLES = {"Normal", "BodyText", "FirstParagraph", "First Paragraph"}
     EXCLUDED_BODY = {"Bibliography", "toc 1", "toc 2", "toc 3",
                      "Compact", "TableCaption", "ImageCaption",
                      "CaptionedFigure", "toc"}
@@ -1264,8 +1427,8 @@ def _format_headings_and_body(doc: Document) -> None:
         pStyle_elem = pPr.find(qn("w:pStyle"))
         style = pStyle_elem.get(qn("w:val")) if pStyle_elem is not None else ""
 
-        if style in HEADING_FMT:
-            # Special headings (参考文献/致谢) use 黑体 三号(16pt), not 小二(18pt)
+        if style in heading_fmt:
+            # Special headings (参考文献/致谢) use 黑体 三号(16pt)
             clean_text = re.sub(r"\s+", "", para.text.strip())
             if clean_text in ("参考文献", "致谢"):
                 _set_para_spacing(pPr, before="400", after="400")
@@ -1275,14 +1438,15 @@ def _format_headings_and_body(doc: Document) -> None:
                     _set_run_font(run, east_asia="黑体", ascii="黑体",
                                   sz="32", bold=True)
                 continue
-            fmt = HEADING_FMT[style]
+            fmt = heading_fmt[style]
             # --- paragraph properties ---
             _set_para_spacing(pPr, before=fmt["before"], after=fmt["after"])
             _set_para_alignment(pPr, fmt["align"])
             _set_para_line_spacing_fixed_20pt(pPr)
-            # --- run properties ---
+            # --- run properties (Level 4 may use 楷体 per profile spec) ---
+            heading_font = heading4_ea if style == "Heading4" else "黑体"
             for run in para.runs:
-                _set_run_font(run, east_asia="黑体", ascii="黑体",
+                _set_run_font(run, east_asia=heading_font, ascii="黑体",
                               sz=fmt["sz"], bold=True)
         elif style in BODY_STYLES:
             if style in EXCLUDED_BODY:
@@ -1426,14 +1590,34 @@ def _set_section_page_number_format(sect_pr, fmt: str) -> None:
     sect_pr.append(pgNumType)
 
 
-def _add_section_breaks_and_page_breaks(doc: Document) -> None:
+def _set_section_page_start(sect_pr, start: int) -> None:
+    """Set page number starting value on a section's sectPr element."""
+    pgNumType = sect_pr.find(qn("w:pgNumType"))
+    if pgNumType is None:
+        pgNumType = parse_xml(
+            f'<w:pgNumType {nsdecls("w")} w:start="{start}"/>'
+        )
+        sect_pr.append(pgNumType)
+    else:
+        pgNumType.set(qn("w:start"), str(start))
+
+
+def _add_section_breaks_and_page_breaks(doc: Document, margins: dict[str, int] | None = None, paper_size: dict[str, int] | None = None) -> None:
     """Add section breaks and page breaks for proper chapter separation.
 
     Creates a section break before the first chapter heading to separate
     front matter (Roman page numbers, no header) from body (Arabic page
     numbers, header). Adds pageBreakBefore to each subsequent chapter heading.
     Only actual headings are considered — TOC entries are ignored.
+
+    margins: page margins dict with keys top/bottom/left/right/header/footer
+             in twips. Defaults to 2.54 cm all sides, 0.5 inch header/footer.
     """
+    if margins is None:
+        margins = {"top": 1440, "bottom": 1440, "left": 1440, "right": 1440,
+                    "header": 720, "footer": 720}
+    if paper_size is None:
+        paper_size = {"w": 11906, "h": 16838}  # A4
     body_elem = doc.element.body
     paragraphs = list(body_elem)
 
@@ -1479,9 +1663,10 @@ def _add_section_breaks_and_page_breaks(doc: Document) -> None:
             f'<w:p {nsdecls("w")}>'
             f'  <w:pPr>'
             f'    <w:sectPr>'
-            f'      <w:pgSz w:w="11906" w:h="16838"/>'
-            f'      <w:pgMar w:top="1440" w:bottom="1440"'
-            f'              w:left="1440" w:right="1440"/>'
+            f'      <w:pgSz w:w="{paper_size["w"]}" w:h="{paper_size["h"]}"/>'
+            f'      <w:pgMar w:top="{margins["top"]}" w:bottom="{margins["bottom"]}"'
+            f'              w:left="{margins["left"]}" w:right="{margins["right"]}"'
+            f'              w:header="{margins["header"]}" w:footer="{margins["footer"]}"/>'
             f'    </w:sectPr>'
             f'  </w:pPr>'
             f"</w:p>"
@@ -1511,18 +1696,39 @@ def _add_section_breaks_and_page_breaks(doc: Document) -> None:
 
 
 def _set_section_headers_footers(doc: Document, header_text: str, title: str) -> None:
-    """Set headers and footers on each section appropriately.
+    """Set headers and footers on each section.
 
-    Section 0 (front matter): no visible page numbers, no header
-    Subsequent sections (body): Arabic page numbers starting from 1, header
+    With cover (3 sections):
+      Section 0: cover — no page numbers, no header
+      Section 1: abstract — Roman page numbers (i, ii…), no header
+      Section 2+: body — Arabic page numbers (1, 2…), header
+
+    Without cover (2 sections):
+      Section 0: front matter — Roman page numbers, no header
+      Section 1: body — Arabic page numbers starting 1, header
     """
     sections = doc.sections
+    n = len(sections)
+    first_body_idx = 2 if n >= 3 else 1
     for i, section in enumerate(sections):
         section.header.is_linked_to_previous = False
         section.footer.is_linked_to_previous = False
 
-        if i == 0:
-            # Front matter: no visible page numbers, no header
+        if n >= 3 and i == 0:
+            # Cover: no page numbers, no header
+            for p in section.header.paragraphs:
+                p.clear()
+            for p in section.footer.paragraphs:
+                p.clear()
+        elif n >= 3 and i == 1:
+            # Abstract: Roman page numbers, no header
+            for p in section.header.paragraphs:
+                p.clear()
+            _add_page_number_footer(section, is_roman=True)
+            _set_section_page_number_format(section._sectPr, "upperRoman")
+            _set_section_page_start(section._sectPr, 1)
+        elif i == 0:
+            # Front matter (no cover): Roman page numbers, no header
             for p in section.header.paragraphs:
                 p.clear()
             for p in section.footer.paragraphs:
@@ -1533,8 +1739,7 @@ def _set_section_headers_footers(doc: Document, header_text: str, title: str) ->
             _add_header_to_section(section, header_text, title)
             _add_page_number_footer(section, is_roman=False)
             _set_section_page_number_format(section._sectPr, "decimal")
-            # Restart numbering at 1 for the first body section
-            if i == 1:
+            if i == first_body_idx:
                 pgNumType = section._sectPr.find(qn("w:pgNumType"))
                 if pgNumType is not None:
                     pgNumType.set(qn("w:start"), "1")
@@ -1621,6 +1826,334 @@ def _replace_para_text(para, new_text: str) -> None:
         para._element.append(parse_xml(run_xml))
 
 
+# --- Format Validation -------------------------------------------------------
+
+# Per-profile validation expectations.
+# Font names are the canonical Chinese names; comparison normalises
+# platform variants (Songti SC → 宋体, Heiti SC → 黑体, Kaiti SC → 楷体,
+# SimSun → 宋体, SimHei → 黑体, KaiTi → 楷体).
+_FONT_ALIASES: dict[str, str] = {
+    "songti sc": "宋体", "simsun": "宋体",
+    "heiti sc": "黑体", "simhei": "黑体",
+    "kaiti sc": "楷体", "kaiti": "楷体",
+    "times new roman": "times new roman",
+    "隶书": "隶书", "lishu": "隶书",
+}
+
+def _normalise_font(name: str) -> str:
+    return _FONT_ALIASES.get(name.strip().lower(), name.strip().lower())
+
+PROFILE_FORMAT_SPECS: dict[str, dict] = {
+    "guangxi-undergrad": {
+        "body_font": "宋体",
+        "body_font_ascii": "times new roman",
+        "body_font_size_pt": 12,       # 小四
+        "body_line_spacing_pt": 20,     # fixed
+        "body_first_indent_chars": 2,
+        "heading1_font": "黑体",
+        "heading1_size_pt": 18,         # 小二号
+        "heading2_font": "黑体",
+        "heading2_size_pt": 15,         # 小三号
+        "heading3_font": "黑体",
+        "heading3_size_pt": 14,         # 四号
+    },
+    "sichuan-grad": {
+        "body_font": "宋体",
+        "body_font_ascii": "times new roman",
+        "body_font_size_pt": 12,
+        "body_line_spacing_pt": 20,
+        "body_first_indent_chars": 2,
+        "heading1_font": "黑体",
+        "heading1_size_pt": 15,         # 小三号
+        "heading2_font": "黑体",
+        "heading2_size_pt": 14,         # 四号
+        "heading3_font": "黑体",
+        "heading3_size_pt": 12,         # 小四号
+    },
+    "mainland-fallback": {
+        "body_font": "宋体",
+        "body_font_ascii": "times new roman",
+        "body_font_size_pt": 12,
+        "body_line_spacing_pt": 20,
+        "body_first_indent_chars": 2,
+        "heading1_font": "黑体",
+        "heading1_size_pt": 18,
+        "heading2_font": "黑体",
+        "heading2_size_pt": 15,
+        "heading3_font": "黑体",
+        "heading3_size_pt": 14,
+    },
+}
+
+
+def validate_format(docx_path: Path, profile: str) -> list[dict]:
+    """Validate a generated DOCX against the profile's format specifications.
+
+    Returns a list of dicts, each describing one check result:
+      - check: human-readable description of what was checked
+      - expected: expected value per the profile specification
+      - observed: actual value found in the document
+      - result: "pass" | "fail" | "warn"
+    """
+    results: list[dict] = []
+    spec = PROFILE_FORMAT_SPECS.get(profile)
+    if spec is None:
+        return [{"check": "profile validation", "expected": profile, "observed": "unknown profile", "result": "fail"}]
+
+    expected_margins = PROFILE_MARGINS.get(profile, {})
+    doc = Document(str(docx_path))
+
+    # -- 1. Page margins (from document-level sectPr in the XML) --------------
+    body = doc.element.body
+    sectPr = body.find(qn("w:sectPr"))
+    if sectPr is not None:
+        pgMar = sectPr.find(qn("w:pgMar"))
+        if pgMar is not None:
+            for edge in ("top", "bottom", "left", "right"):
+                exp = expected_margins.get(edge)
+                if exp is None:
+                    continue
+                val_str = pgMar.get(qn(f"w:{edge}"))
+                obs = int(val_str) if val_str else None
+                if obs is not None:
+                    # Convert twips → mm for readability
+                    exp_mm = round(exp * 25.4 / 1440, 1)
+                    obs_mm = round(obs * 25.4 / 1440, 1)
+                    margin_ok = abs(obs - exp) <= 20  # ~1 pt tolerance
+                    results.append({
+                        "check": f"Page {edge} margin",
+                        "expected": f"{exp_mm} mm ({exp} twips)",
+                        "observed": f"{obs_mm} mm ({obs} twips)",
+                        "result": "pass" if margin_ok else "fail",
+                    })
+                else:
+                    results.append({
+                        "check": f"Page {edge} margin",
+                        "expected": f"{exp} twips",
+                        "observed": "not found",
+                        "result": "fail",
+                    })
+        else:
+            results.append({"check": "Page margins", "expected": "present", "observed": "missing", "result": "fail"})
+    else:
+        results.append({"check": "Document section", "expected": "present", "observed": "missing", "result": "fail"})
+
+    # -- 2. Normal (body) style: font, size, line spacing ---------------------
+    normal_style = doc.styles["Normal"]
+    _validate_style_font(results, normal_style, "body", spec)
+    _validate_style_spacing(results, normal_style, spec)
+
+    # -- 3. Heading styles ----------------------------------------------------
+    for level, key_prefix in [(1, "heading1"), (2, "heading2"), (3, "heading3")]:
+        style_id = f"Heading {level}"
+        h_font = spec.get(f"{key_prefix}_font")
+        h_size = spec.get(f"{key_prefix}_size_pt")
+        if h_font is None or h_size is None:
+            continue
+        try:
+            h_style = doc.styles[style_id]
+        except KeyError:
+            results.append({
+                "check": f"Heading {level} style ({style_id})",
+                "expected": "present",
+                "observed": "missing",
+                "result": "warn",
+            })
+            continue
+        _validate_style_font(results, h_style, f"heading {level}", spec, key_prefix)
+
+    # -- 4. Sections and page numbering ---------------------------------------
+    # Count paragraph-embedded section breaks (each adds a new section)
+    para_sectPrs = [
+        p.find(qn("w:pPr")).find(qn("w:sectPr"))
+        for p in body.findall(qn("w:p"))
+        if p.find(qn("w:pPr")) is not None and p.find(qn("w:pPr")).find(qn("w:sectPr")) is not None
+    ]
+    section_count = 1 + len(para_sectPrs)
+    results.append({
+        "check": "Section count",
+        "expected": ">= 3 (cover, abstract, body)",
+        "observed": str(section_count),
+        "result": "pass" if section_count >= 3 else "warn",
+    })
+
+    # Check page numbering on body sections
+    pg_num_types = []
+    body_sectPr = sectPr
+    if body_sectPr is not None:
+        pgNumType = body_sectPr.find(qn("w:pgNumType"))
+        pg_num_types.append(pgNumType.get(qn("w:fmt")) if pgNumType is not None else "decimal(default)")
+        pg_start = pgNumType.get(qn("w:start")) if pgNumType is not None else None
+        results.append({
+            "check": "Body page numbering format",
+            "expected": "decimal (1, 2, 3...)",
+            "observed": pg_num_types[-1],
+            "result": "pass" if pg_num_types[-1] in ("decimal", "decimal(default)") else "warn",
+        })
+
+    results.append({
+        "check": "Body page numbering start",
+        "expected": "1",
+        "observed": str(pg_start) if pg_start else "not set (default)",
+        "result": "pass" if pg_start is None or pg_start == "1" else "warn",
+    })
+
+    # -- 5. Body paragraph sample (line spacing override at paragraph level) --
+    _validate_body_paragraph_sample(results, doc, spec)
+
+    return results
+
+
+def _validate_body_paragraph_sample(results: list[dict], doc, spec: dict) -> None:
+    """Spot-check one body paragraph for line-spacing override."""
+    exp_spacing = spec.get("body_line_spacing_pt")
+    if exp_spacing is None:
+        return
+    # Look for a paragraph AFTER the first chapter heading; all body content
+    # follows chapter headings in Chinese thesis structure.
+    skip_prefixes = ("abstract", "keywords", "keyword", "摘要", "关键词",
+                     "目", "ABSTRACT", "KEYWORDS", "[", "TOC", "toc")
+    found_chapter = False
+    for para in doc.paragraphs:
+        text = para.text.strip()
+        if not text:
+            continue
+        if not found_chapter:
+            if re.match(r"^第[一二三四五六七八九十\d]+章", text.replace(" ", "")):
+                found_chapter = True
+            continue
+        if any(text.startswith(p) for p in skip_prefixes):
+            continue
+        if len(text) < 10:  # skip very short lines (sub-headings, labels)
+            continue
+        # Found a plausible body paragraph — check its spacing
+        pPr = para._element.find(qn("w:pPr"))
+        if pPr is not None:
+            spacing = pPr.find(qn("w:spacing"))
+            if spacing is not None:
+                line_val = spacing.get(qn("w:line"))
+                line_rule = spacing.get(qn("w:lineRule"))
+                if line_rule == "exact" and line_val:
+                    obs_pt = round(int(line_val) / 20, 1)
+                    spacing_ok = abs(obs_pt - exp_spacing) < 2.0
+                    results.append({
+                        "check": "Body paragraph line spacing (sample)",
+                        "expected": f"{exp_spacing} pt exact",
+                        "observed": f"{obs_pt} pt exact",
+                        "result": "pass" if spacing_ok else "fail",
+                    })
+                else:
+                    obs_line = round(int(line_val) / 20, 1) if line_val else "not set"
+                    results.append({
+                        "check": "Body paragraph line spacing (sample)",
+                        "expected": f"{exp_spacing} pt exact",
+                        "observed": f"{obs_line} pt (rule={line_rule})",
+                        "result": "fail",
+                    })
+            else:
+                results.append({
+                    "check": "Body paragraph line spacing (sample)",
+                    "expected": f"{exp_spacing} pt exact",
+                    "observed": "no spacing element (inherited from style)",
+                    "result": "warn",
+                })
+        break  # Only check first body paragraph
+
+
+def _validate_style_font(results: list[dict], style, label: str, spec: dict, prefix: str = "body") -> None:
+    """Validate font name and size of a python-docx style against spec."""
+    f = style.font
+    exp_font = spec.get(f"{prefix}_font")
+    exp_ascii = spec.get(f"{prefix}_font_ascii") if prefix == "body" else None
+    exp_size = spec.get(f"{prefix}_font_size_pt")
+
+    # Font size (half-points in DOCX; 12pt = 24 half-pts)
+    if exp_size is not None:
+        obs_sz = f.size
+        if obs_sz is not None:
+            obs_pt = obs_sz / 12700  # EMU → pt
+            size_ok = abs(obs_pt - exp_size) < 1.0
+            results.append({
+                "check": f"{label.capitalize()} font size",
+                "expected": f"{exp_size} pt",
+                "observed": f"{obs_pt:.0f} pt",
+                "result": "pass" if size_ok else "fail",
+            })
+        else:
+            results.append({
+                "check": f"{label.capitalize()} font size",
+                "expected": f"{exp_size} pt",
+                "observed": "not set (inherited)",
+                "result": "pass",  # inheritance is normal
+            })
+
+    # East-Asian font
+    if exp_font is not None:
+        # Read via XML for east-asian font
+        rPr = style.element.find(qn("w:rPr"))
+        obs_ea = "not set"
+        if rPr is not None:
+            rFonts = rPr.find(qn("w:rFonts"))
+            if rFonts is not None:
+                ea_val = rFonts.get(qn("w:eastAsia"))
+                if ea_val:
+                    obs_ea = _normalise_font(ea_val)
+        exp_normalised = _normalise_font(exp_font)
+        results.append({
+            "check": f"{label.capitalize()} CJK font",
+            "expected": f"{exp_font} ({exp_normalised})",
+            "observed": obs_ea,
+            "result": "pass" if obs_ea == exp_normalised else "warn",
+        })
+
+    # ASCII font
+    if exp_ascii is not None:
+        rPr = style.element.find(qn("w:rPr"))
+        obs_ascii = "not set"
+        if rPr is not None:
+            rFonts = rPr.find(qn("w:rFonts"))
+            if rFonts is not None:
+                ascii_val = rFonts.get(qn("w:ascii"))
+                if ascii_val:
+                    obs_ascii = ascii_val.strip().lower()
+        results.append({
+            "check": f"{label.capitalize()} ASCII font",
+            "expected": exp_ascii,
+            "observed": obs_ascii,
+            "result": "pass" if obs_ascii == exp_ascii else "warn",
+        })
+
+
+def _validate_style_spacing(results: list[dict], style, spec: dict) -> None:
+    """Validate line spacing of a python-docx style against spec."""
+    exp_spacing = spec.get("body_line_spacing_pt")
+    if exp_spacing is None:
+        return
+    pf = style.paragraph_format
+    # line_spacing returns a float (lines) or None; line_spacing_rule is an enum
+    ls = pf.line_spacing
+    lsr = pf.line_spacing_rule
+    if ls is not None:
+        obs_pt = round(ls / 20, 1)  # twips → pt
+        spacing_ok = abs(obs_pt - exp_spacing) < 2.0
+        # Style-level spacing is often overridden at paragraph level by
+        # _set_para_line_spacing_fixed_20pt(); a mismatch here is a style
+        # definition quirk, not a visible defect.  Flag as warn, not fail.
+        results.append({
+            "check": "Body line spacing (Normal style)",
+            "expected": f"{exp_spacing} pt exact",
+            "observed": f"{obs_pt} pt (rule={lsr})",
+            "result": "pass" if spacing_ok else "warn",
+        })
+    else:
+        results.append({
+            "check": "Body line spacing",
+            "expected": f"{exp_spacing} pt exact",
+            "observed": "not set (inherited)",
+            "result": "pass",
+        })
+
+
 def postprocess(
     input_docx: Path,
     output_docx: Path,
@@ -1637,6 +2170,8 @@ def postprocess(
     fields.setdefault("title", title)
     header_text = _profile_header_text(profile)
     toc_title = _profile_toc_title(profile)
+    margins = PROFILE_MARGINS.get(profile, {"top": 1440, "bottom": 1440, "left": 1440, "right": 1440, "header": 720, "footer": 720})
+    paper_size = PROFILE_PAPER_SIZES.get(profile, {"w": 11906, "h": 16838})
 
     if explicit_title:
         _remove_generated_title_paragraph(doc, explicit_title)
@@ -1645,7 +2180,7 @@ def postprocess(
 
     # 0. Insert selected school cover before generated front matter/body.
     if cover_docx is not None:
-        insert_at = _insert_cover(doc, cover_docx, fields)
+        insert_at = _insert_cover(doc, cover_docx, fields, margins=margins, paper_size=paper_size)
 
     # 0b. Insert required Chinese/English abstract pages after the cover.
     if abstract_fields:
@@ -1655,7 +2190,7 @@ def postprocess(
     _auto_number_headings(doc)
 
     # 1. Add section breaks and chapter page breaks
-    _add_section_breaks_and_page_breaks(doc)
+    _add_section_breaks_and_page_breaks(doc, margins=margins, paper_size=paper_size)
 
     # 2. Format all tables as three-line tables (三线表)
     _format_tables_three_line(doc)
@@ -1669,8 +2204,8 @@ def postprocess(
     # 2.8 Format equation numbers (right-aligned, sequential numbering)
     _format_equation_numbers(doc)
 
-    # 2.9 Format headings (一级/二级/三级/四级) and body text per Guangxi spec
-    _format_headings_and_body(doc)
+    # 2.9 Format headings (一级/二级/三级/四级) and body text per profile spec
+    _format_headings_and_body(doc, profile)
 
     # 3. Set headers and footers on each section
     _set_section_headers_footers(doc, header_text, title)

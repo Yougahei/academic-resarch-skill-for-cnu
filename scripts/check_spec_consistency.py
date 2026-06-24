@@ -437,19 +437,17 @@ ZH_README_CONFIGS = (
     {
         "rel_path": "README.zh-CN.md",
         "headings": (
-            "#### Deep Research（深度研究，7 种模式）",
-            "#### Academic Paper（学术论文撰写，10 种模式）",
-            "#### Academic Paper Reviewer（论文审查，6 种模式）",
-            "### Deep Research (v2.9.4)",
-            "### Academic Paper (v3.2.0)",
-            "### Academic Paper Reviewer (v1.10.0)",
-            "### Academic Pipeline (v3.12.0)",
+            "## 相比原版的新增功能",
+            "## 四个核心 Skill",
+            "## 安装",
+            "## 使用方式",
         ),
-        "paper_start": "#### Academic Paper（学术论文撰写，10 种模式）",
-        "reviewer_start": "#### Academic Paper Reviewer（论文审查，6 种模式）",
-        "pipeline_start": "#### Academic Pipeline（全流程调度器）",
-        "deep_start": "#### Deep Research（深度研究，7 种模式）",
-        "docx_line": "DOCX（Pandoc 可用时）",
+        "paper_start": "## 使用方式",
+        "reviewer_start": "## 中国高校论文格式支持",
+        "pipeline_start": "## 开发与测试",
+        "deep_start": "## 相比原版的新增功能",
+        "docx_line": "DOCX",
+        "cnu_fork": True,  # uses different structure from upstream translated READMEs
     },
 )
 
@@ -458,37 +456,26 @@ def check_readme_zh_sections() -> None:
     for config in ZH_README_CONFIGS:
         rel_path = config["rel_path"]
         text = read(rel_path)
+        is_cnu = config.get("cnu_fork", False)
+        # CNU fork zh-CN uses English parentheses for version dates
+        paren_open = " (" if is_cnu else "（"
+        paren_close = ")" if is_cnu else "）"
 
         expect_contains(rel_path, "version-v3.12.0-blue")
         expect_contains(rel_path, "releases/tag/v3.12.0")
-        expect_contains(rel_path, "### v3.12.0（2026-06-08）")
-        expect_contains(rel_path, "### v3.11.1（2026-06-06）")
-        expect_contains(rel_path, "### v3.11.0（2026-06-04）")
-        expect_contains(rel_path, "### v3.10.0（2026-06-01）")
-        expect_contains(rel_path, "### v3.9.4.2（2026-05-19）")
-        expect_contains(rel_path, "### v3.9.4.1（2026-05-19）")
-        expect_contains(rel_path, "### v3.9.4（2026-05-18）")
-        expect_contains(rel_path, "### v3.9.1（2026-05-18）")
-        expect_contains(rel_path, "### v3.9.0（2026-05-17）")
-        expect_contains(rel_path, "### v3.8.0（2026-05-16）")
-        expect_contains(rel_path, "### v3.7.0（2026-05-05）")
-        expect_contains(rel_path, "### v3.6.8（2026-05-03）")
-        expect_contains(rel_path, "### v3.6.7（2026-04-30）")
-        expect_contains(rel_path, "### v3.6.5（2026-04-27）")
-        expect_contains(rel_path, "### v3.6.4（2026-04-25）")
-        expect_contains(rel_path, "### v3.6.3（2026-04-23）")
-        expect_contains(rel_path, "### v3.6.2（2026-04-23）")
-        expect_contains(rel_path, "### v3.5.1（2026-04-22）")
-        expect_contains(rel_path, "### v3.5.0（2026-04-21）")
-        expect_contains(rel_path, "### v3.4.0（2026-04-20）")
-        expect_contains(rel_path, "### v3.3.6 (2026-04-15)")
-        expect_contains(rel_path, "### v3.3.5 (2026-04-15)")
-        expect_contains(rel_path, "### v3.3.4 (2026-04-15)")
-        expect_contains(rel_path, "### v3.3.3 (2026-04-15)")
-        expect_contains(rel_path, "### v3.3.2 (2026-04-15)")
+        expect_contains(rel_path, f"### v3.12.0{paren_open}2026-06-08{paren_close}")
+        expect_contains(rel_path, f"### v3.11.1{paren_open}2026-06-06{paren_close}")
+        expect_contains(rel_path, f"### v3.11.0{paren_open}2026-06-04{paren_close}")
+        expect_contains(rel_path, f"### v3.10.0{paren_open}2026-06-01{paren_close}")
         for heading in config["headings"]:
             if heading not in text:
                 fail(f"{rel_path}: missing heading {heading!r}")
+
+        # CNU fork zh-CN has a different structure — skip upstream mode-detail checks
+        if is_cnu:
+            expect_contains(rel_path, config["docx_line"])
+            check_relative_markdown_links(rel_path)
+            continue
 
         paper_usage = extract_section(
             text,

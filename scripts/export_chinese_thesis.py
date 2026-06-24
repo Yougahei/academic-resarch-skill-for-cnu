@@ -73,10 +73,11 @@ def discover_profiles() -> dict[str, ExportProfile]:
         # Read optional sidecar JSON (filename without _reference suffix)
         meta = _read_json_sidecar(ref_path.parent / f"{stem}.json")
 
-        # Try to infer tex template
+        # Try to infer tex template — set to None when not found so PDF
+        # export can skip rather than silently using the wrong template.
         tex_stem = f"chinese_thesis_{stem}_template.tex"
         tex_candidate = TEX_TEMPLATE_DIR / tex_stem
-        tex_path = tex_candidate if tex_candidate.exists() else TEX_TEMPLATE_DIR / "chinese_thesis_guangxi_undergrad_template.tex"
+        tex_path = tex_candidate if tex_candidate.exists() else None
 
         # Try to infer cover docx
         cover_path = DOCX_TEMPLATE_DIR / "covers" / f"{stem}_thesis_cover.docx"
@@ -103,7 +104,7 @@ _BUILTIN_PROFILES: dict[str, ExportProfile] = {
     "mainland-fallback": ExportProfile(
         id="mainland-fallback",
         label="Mainland China University Thesis Fallback",
-        tex_template=ROOT / "academic-paper/templates/chinese_thesis_guangxi_undergrad_template.tex",
+        tex_template=ROOT / "academic-paper/templates/chinese_thesis_mainland_fallback_template.tex",
         reference_docx=ROOT / "academic-paper/templates/docx/mainland_fallback_reference.docx",
         school_label="Mainland China University",
         degree_label="Unspecified",
@@ -381,6 +382,11 @@ def _yaml_quote(value: str) -> str:
         import yaml  # type: ignore
 
         dumped = yaml.dump(value, allow_unicode=True, default_flow_style=False)
+        # yaml.dump appends "\n...\n" (document-end marker).  Strip it —
+        # a trailing "..." inside a Pandoc YAML metadata block terminates
+        # the block and dumps everything after it into the document body.
+        if dumped.endswith("...\n"):
+            dumped = dumped[:-4]
         return dumped.rstrip("\n")
     except Exception:
         escaped = value.replace("\\", "\\\\").replace('"', '\\"')
@@ -388,9 +394,12 @@ def _yaml_quote(value: str) -> str:
 
 
 def _render_yaml_metadata(metadata: dict[str, str]) -> str:
+    """Write ALL metadata keys to YAML frontmatter so Pandoc/LaTeX can use them.
+
+    THESIS_METADATA_KEYS + COVER_FIELD_KEYS are both needed — cover fields (author,
+    advisor, college, major, etc.) feed LaTeX title-page variables."""
     lines = ["---"]
-    for key in THESIS_METADATA_KEYS:
-        value = metadata.get(key, "")
+    for key, value in metadata.items():
         if not value:
             continue
         if "\n" in value:
@@ -439,12 +448,10 @@ def prepare_markdown_for_export(input_path: Path, output_dir: Path) -> PreparedM
     }
     if title:
         metadata["title"] = title
-    # Only strip first H1 if it matches the frontmatter title (avoids eating chapter headings)
-    first_h1 = _find_markdown_h1(body_without_abstracts)
-    if first_h1 and title and first_h1.strip() == title.strip():
-        body_without_title = _strip_initial_h1(body_without_abstracts)
-    else:
-        body_without_title = body_without_abstracts
+    # Strip the first H1 heading — when frontmatter carries a title it is always
+    # redundant (the title page already presents it), and when it is missing the
+    # first H1 *is* the title and was already promoted into metadata.
+    body_without_title = _strip_initial_h1(body_without_abstracts) if title else body_without_abstracts
     normalized = _render_yaml_metadata(metadata) + body_without_title
     normalized_path = output_dir / f"{input_path.stem}.normalized.md"
     normalized_path.write_text(normalized, encoding="utf-8")
@@ -500,6 +507,7 @@ def build_pandoc_args(
     profile: ExportProfile,
     reference_docx: Path | None = None,
     tex_template: Path | None = None,
+    pdf_engine: str = "xelatex",
     bibliography: Path | None = None,
     csl: Path | None = None,
     citeproc: bool = True,
@@ -515,7 +523,7 @@ def build_pandoc_args(
                 "--template",
                 str(template),
                 "--pdf-engine",
-                "xelatex",
+                pdf_engine,
                 "--top-level-division",
                 "chapter",
             ]
@@ -557,59 +565,81 @@ def write_report(
     cover_docx: Path | None = None,
     cover_fields: dict[str, str] | None = None,
 ) -> None:
-    field_note = ""
+    lines: list[str] = [
+        "# Chinese Thesis Export Report",
+        "",
+        f"- Profile: `{profile.id}` ({profile.label})",
+        f"- Input: `{input_path}`",
+        f"- Output: `{output_path}`",
+        f"- Format: `{output_format}`",
+        f"- School: `{profile.school_label}`",
+        f"- Degree level: `{profile.degree_label}`",
+        f"- Paper type: `{profile.paper_type_label}`",
+        "",
+        "## Pandoc Command",
+        "",
+        "```bash",
+        " ".join(command),
+        "```",
+    ]
+
     if output_format == "docx":
         filled, missing = cover_field_status(cover_fields or {})
-        cover_note = "\n## Cover Template\n"
+        lines.append("")
+        lines.append("## Cover Template")
         if cover_docx:
-            cover_note += (
-                f"- Cover source: `{cover_docx}`\n"
-                f"- Filled fields: {', '.join(filled) if filled else 'none'}\n"
-                f"- Fields left for manual completion: {', '.join(missing) if missing else 'none'}\n"
-            )
+            lines.append(f"- Cover source: `{cover_docx}`")
+            lines.append(f"- Filled fields: {', '.join(filled) if filled else 'none'}")
+            lines.append(f"- Fields left for manual completion: {', '.join(missing) if missing else 'none'}")
         else:
-            cover_note += "- Cover source: not configured for this profile.\n"
-        field_note = (
-            cover_note
-            +
-            "\n## Word/WPS Manual Refresh\n"
+            lines.append("- Cover source: not configured for this profile.")
+
+        # --- Format validation --------------------------------------------------
+        lines.append("")
+        lines.append("## Format Validation")
+        lines.append("")
+        try:
+            from scripts.postprocess_chinese_thesis_docx import validate_format
+            checks = validate_format(output_path, profile.id)
+            if checks:
+                icon_map = {"pass": "✅", "fail": "❌", "warn": "⚠️"}
+                lines.append("| Check | Expected | Observed | Result |")
+                lines.append("|-------|----------|----------|--------|")
+                for c in checks:
+                    icon = icon_map.get(c["result"], "❓")
+                    lines.append(
+                        f"| {c['check']} | {c['expected']} | {c['observed']} | {icon} {c['result']} |"
+                    )
+                passed = sum(1 for c in checks if c["result"] == "pass")
+                warned = sum(1 for c in checks if c["result"] == "warn")
+                failed = sum(1 for c in checks if c["result"] == "fail")
+                lines.append("")
+                lines.append(f"**Summary:** {passed} pass, {warned} warn, {failed} fail (of {len(checks)} checks)")
+        except ImportError:
+            lines.append("(Validation skipped — python-docx not available)")
+        except Exception as exc:
+            lines.append(f"(Validation error: {exc})")
+
+        lines.append("")
+        lines.append("## Word/WPS Manual Refresh")
+        lines.append(
             "Open the generated DOCX in Word/WPS/LibreOffice, select all, "
             "refresh fields, then inspect the table of contents, page numbers, "
-            "captions, headers, and final pagination.\n"
-            "\nHeaders, footers, page numbers, and TOC were added by the "
-            "auto post-processing step (scripts/postprocess_chinese_thesis_docx.py).\n"
-            "If they appear incorrect, open the DOCX and manually adjust:\n"
-            "  - Headers: 广西大学本科毕业论文 (left) + title (right), 隶书 小四号\n"
-            "  - Footers: Roman numerals (front matter), Arabic (body)\n"
-            "  - TOC: Right-click > Update Field > Update entire table\n"
+            "captions, headers, and final pagination."
         )
-    report_path.write_text(
-        "\n".join(
-            [
-                "# Chinese Thesis Export Report",
-                "",
-                f"- Profile: `{profile.id}` ({profile.label})",
-                f"- Input: `{input_path}`",
-                f"- Output: `{output_path}`",
-                f"- Format: `{output_format}`",
-                f"- School: `{profile.school_label}`",
-                f"- Degree level: `{profile.degree_label}`",
-                f"- Paper type: `{profile.paper_type_label}`",
-                "",
-                "## Pandoc Command",
-                "",
-                "```bash",
-                " ".join(command),
-                "```",
-                field_note,
-                "## Priority Reminder",
-                "",
-                "User-provided official school/college templates override built-in fallback templates.",
-                "",
-            ]
-        ),
-        encoding="utf-8",
-    )
+        lines.append("")
+        lines.append(
+            "Headers, footers, page numbers, and TOC were added by the "
+            "auto post-processing step (scripts/postprocess_chinese_thesis_docx.py)."
+        )
+
+    lines.append("")
+    lines.append("## Priority Reminder")
+    lines.append("")
+    lines.append("User-provided official school/college templates override built-in fallback templates.")
+    lines.append("")
+
+    report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def export_once(args: argparse.Namespace, output_format: str) -> Path:
@@ -633,13 +663,20 @@ def export_once(args: argparse.Namespace, output_format: str) -> Path:
         bibliography = Path(args.bibliography).resolve() if args.bibliography else None
         csl = Path(args.csl).resolve() if args.csl else None
         cover_fields = cover_fields_from_metadata(prepared.metadata, profile)
+        pdf_engine = args.pdf_engine
 
         if output_format == "docx":
             _check_asset(reference_docx or profile.reference_docx, "reference DOCX")
             if cover_docx:
                 _check_asset(cover_docx, "cover DOCX")
         if output_format in {"pdf", "latex"}:
-            _check_asset(tex_template or profile.tex_template, "LaTeX template")
+            tex = tex_template or profile.tex_template
+            if tex is None:
+                raise RuntimeError(
+                    f"No LaTeX template available for profile '{profile.id}'. "
+                    f"Set --tex-template or add a template file."
+                )
+            _check_asset(tex, "LaTeX template")
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         command = build_pandoc_args(
@@ -650,6 +687,7 @@ def export_once(args: argparse.Namespace, output_format: str) -> Path:
             profile=profile,
             reference_docx=reference_docx,
             tex_template=tex_template,
+            pdf_engine=pdf_engine,
             bibliography=bibliography,
             csl=csl,
             citeproc=not args.no_citeproc,
@@ -717,6 +755,12 @@ def main() -> int:
     parser.add_argument("--reference-docx", help="Override DOCX reference template.")
     parser.add_argument("--cover-docx", help="Override DOCX cover template.")
     parser.add_argument("--tex-template", help="Override LaTeX/PDF template.")
+    parser.add_argument(
+        "--pdf-engine",
+        default="xelatex",
+        choices=["xelatex", "tectonic", "lualatex", "pdflatex"],
+        help="PDF engine for Pandoc. Default: xelatex.",
+    )
     parser.add_argument("--bibliography", help="Optional BibTeX bibliography.")
     parser.add_argument("--csl", help="Optional CSL file, for example GB/T 7714.")
     parser.add_argument("--no-citeproc", action="store_true", help="Disable Pandoc citeproc.")
