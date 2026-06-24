@@ -17,6 +17,8 @@ from html import escape
 import re
 import sys
 from pathlib import Path
+import zipfile
+from lxml import etree
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -171,6 +173,157 @@ def _insert_cover(doc: Document, cover_docx: Path, cover_fields: dict[str, str])
     )
     body.insert(insert_at, page_break)
     return insert_at + 1
+
+
+def _merge_cover_package_resources(output_docx: Path, cover_docx: Path) -> None:
+    """Merge media files, relationships, and content types from cover DOCX into output.
+
+    python-docx does not propagate image relationships or media when raw XML
+    elements are inserted from another document.  This function opens the saved
+    DOCX as a ZIP archive and merges the cover's package parts so that images
+    (e.g. school logos) render correctly.
+    """
+    # 1. Read cover package resources.
+    with zipfile.ZipFile(cover_docx, "r") as cz:
+        cover_rels_raw = cz.read("word/_rels/document.xml.rels")
+        cover_ct_raw = cz.read("[Content_Types].xml")
+        cover_media = {name: cz.read(name) for name in cz.namelist() if name.startswith("word/media/")}
+
+    # 2. Parse cover relationships to find image/comment rels.
+    NS_REL = "http://schemas.openxmlformats.org/package/2006/relationships"
+    cover_rels = etree.fromstring(cover_rels_raw)
+    cover_image_rels: list[tuple[str, str]] = []
+    IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+    for child in cover_rels:
+        if child.get("Type") == IMAGE_REL_TYPE:
+            cover_image_rels.append((child.get("Id", ""), child.get("Target", "")))
+
+    if not cover_image_rels:
+        return
+
+    # 3. Read output package: max existing rId, existing media, document.xml.
+    with zipfile.ZipFile(output_docx, "r") as oz:
+        output_namelist = oz.namelist()
+        output_rels_raw = oz.read("word/_rels/document.xml.rels")
+        output_ct_raw = oz.read("[Content_Types].xml")
+        output_doc_raw = oz.read("word/document.xml")
+
+    # 4. Parse output relationships to find max rId.
+    output_rels = etree.fromstring(output_rels_raw)
+    max_rId = 0
+    for child in output_rels:
+        rid = child.get("Id", "")
+        m = re.match(r"rId(\d+)", rid)
+        if m:
+            max_rId = max(max_rId, int(m.group(1)))
+
+    existing_media = {name for name in output_namelist if name.startswith("word/media/")}
+
+    # 5. Build rId remap from cover rels to new output rels.
+    rId_remap: dict[str, str] = {}
+
+    for old_rid, target in cover_image_rels:
+        target_path = f"word/{target}" if not target.startswith("word/") else target
+        if target_path in existing_media:
+            # Already exists; reuse existing relationship.
+            for child in output_rels:
+                if child.get("Target", "") == target:
+                    rId_remap[old_rid] = child.get("Id", "")
+                    break
+            continue
+
+        max_rId += 1
+        new_rid = f"rId{max_rId}"
+        rId_remap[old_rid] = new_rid
+        rel_elem = etree.SubElement(output_rels, "Relationship")
+        rel_elem.set("Id", new_rid)
+        rel_elem.set("Type", IMAGE_REL_TYPE)
+        rel_elem.set("Target", target)
+
+    if not rId_remap:
+        return
+
+    # 6. Replace old cover rIds in document.xml body with remapped ones.
+    NS_W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    NS_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+
+    output_doc = etree.fromstring(output_doc_raw)
+    body = output_doc.find(f"{{{NS_W}}}body")
+    if body is not None:
+        for elem in body.iter():
+            for attr_name in (f"{{{NS_R}}}embed", f"{{{NS_R}}}id"):
+                old_val = elem.get(attr_name)
+                if old_val and old_val in rId_remap:
+                    elem.set(attr_name, rId_remap[old_val])
+
+    output_doc_bytes = etree.tostring(
+        output_doc, xml_declaration=True, encoding="UTF-8", standalone=True
+    )
+
+    # 7. Merge content types.
+    CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
+    output_ct = etree.fromstring(output_ct_raw)
+    known_parts = {child.get("PartName", "") for child in output_ct}
+
+    CONTENT_TYPE_MAP = {
+        "png": "image/png",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "gif": "image/gif",
+        "bmp": "image/bmp",
+        "tiff": "image/tiff",
+        "tif": "image/tiff",
+        "svg": "image/svg+xml",
+        "wmf": "image/x-wmf",
+        "emf": "image/x-emf",
+    }
+    for name in sorted(cover_media):
+        part_name = f"/{name}"
+        if part_name in known_parts:
+            continue
+        ext = name.rsplit(".", 1)[-1].lower()
+        ct = CONTENT_TYPE_MAP.get(ext, "application/octet-stream")
+        override = etree.SubElement(output_ct, f"{{{CT_NS}}}Override")
+        override.set("PartName", part_name)
+        override.set("ContentType", ct)
+
+    output_ct_bytes = etree.tostring(
+        output_ct, xml_declaration=True, encoding="UTF-8", standalone=True
+    )
+
+    # 8. Serialize updated relationships.
+    # Remove default namespace declaration from rels root (OOXML requires unqualified attrs).
+    output_rels_bytes = etree.tostring(
+        output_rels, xml_declaration=True, encoding="UTF-8", standalone=True
+    )
+
+    _replace_in_zip(
+        output_docx,
+        {
+            "word/document.xml": output_doc_bytes,
+            "word/_rels/document.xml.rels": output_rels_bytes,
+            "[Content_Types].xml": output_ct_bytes,
+            **cover_media,
+        },
+    )
+
+
+def _replace_in_zip(zip_path: Path, replacements: dict[str, bytes]) -> None:
+    """Replace or add files in an existing ZIP archive."""
+    tmp_path = zip_path.with_suffix(zip_path.suffix + ".tmp")
+    with zipfile.ZipFile(zip_path, "r") as src:
+        existing_names = set(src.namelist())
+        with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as dst:
+            for item in src.infolist():
+                name = item.filename
+                if name in replacements:
+                    dst.writestr(name, replacements[name])
+                else:
+                    dst.writestr(name, src.read(name))
+            for name, data in replacements.items():
+                if name not in existing_names:
+                    dst.writestr(name, data)
+    tmp_path.replace(zip_path)
 
 
 def _run_properties_xml(
@@ -1537,6 +1690,11 @@ def postprocess(
     # Save
     output_docx.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(output_docx))
+
+    # Post-save: merge cover media, relationships, and content types into the package.
+    if cover_docx is not None:
+        _merge_cover_package_resources(output_docx, cover_docx)
+
     return output_docx
 
 
