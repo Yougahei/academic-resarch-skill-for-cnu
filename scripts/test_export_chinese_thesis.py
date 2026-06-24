@@ -407,6 +407,74 @@ def test_postprocess_without_cover_does_not_insert_guangxi_cover(tmp_path: Path)
     assert "本科毕业论文" not in _all_docx_text(doc)
 
 
+def test_postprocess_paragraph_order_cover_toc_body(tmp_path: Path) -> None:
+    """Regression: cover title must appear before TOC, and TOC before first chapter.
+
+    Verifies the structural (OOXML body-element) order, not just paragraph text
+    search, so that reordering bugs are caught even when the expected text is
+    present somewhere in the document.
+    """
+    input_docx = tmp_path / "input.docx"
+    output_docx = tmp_path / "output.docx"
+    _write_generated_docx_with_pandoc_title(input_docx, "测试论文题目")
+    profile = export.PROFILES["guangxi-undergrad"]
+    assert profile.cover_docx is not None
+
+    postprocess(
+        input_docx=input_docx,
+        output_docx=output_docx,
+        profile=profile.id,
+        cover_docx=profile.cover_docx,
+        cover_fields={"title": "测试论文题目"},
+        abstract_fields={
+            "title-en": "test title",
+            "abstract-zh": "中文摘要。",
+            "keywords-zh": "关键词A；关键词B",
+            "abstract-en": "English abstract.",
+            "keywords-en": "keywordA; keywordB",
+        },
+    )
+
+    doc = Document(str(output_docx))
+    body_children = list(doc.element.body)
+
+    # Locate landmark elements by their text content
+    def _elem_index_containing(
+        children, text_fragment: str, skip_tag: str | None = None
+    ) -> int:
+        for i, elem in enumerate(children):
+            if skip_tag and elem.tag == skip_tag:
+                continue
+            all_t = "".join(
+                t.text or "" for t in elem.findall(".//" + qn("w:t"))
+            )
+            if text_fragment in all_t:
+                return i
+        return -1
+
+    # Exclude sectPr elements (section properties live at body level)
+    w_p = qn("w:p")
+    cover_idx = _elem_index_containing(body_children, "本科毕业论文", skip_tag=None)
+    toc_heading_idx = _elem_index_containing(body_children, "目  录", skip_tag=None)
+    toc_field_idx = _elem_index_containing(body_children, "请在Word中右键更新目录", skip_tag=None)
+    first_chap_idx = _elem_index_containing(body_children, "第1章", skip_tag=None)
+
+    assert cover_idx >= 0, "cover title must be in body"
+    assert toc_heading_idx >= 0, "TOC heading must be in body"
+    assert toc_field_idx >= 0, "TOC field must be in body"
+    assert first_chap_idx >= 0, "first chapter must be in body"
+
+    assert cover_idx < toc_heading_idx, (
+        f"cover ({cover_idx}) must appear before TOC heading ({toc_heading_idx})"
+    )
+    assert toc_heading_idx < toc_field_idx, (
+        f"TOC heading ({toc_heading_idx}) must appear before TOC field ({toc_field_idx})"
+    )
+    assert toc_field_idx < first_chap_idx, (
+        f"TOC field ({toc_field_idx}) must appear before first chapter ({first_chap_idx})"
+    )
+
+
 def test_build_tool_env_returns_path() -> None:
     env = export.build_tool_env()
     assert "PATH" in env

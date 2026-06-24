@@ -83,6 +83,7 @@ v3.3 的靈感來自 [**PaperOrchestra**](https://arxiv.org/abs/2604.05018)（So
 - **Benchmark 報告 Schema**（v3.3.5+）— JSON Schema + lint script，要求誠實的 benchmark 比較報告。詳見 [`shared/benchmark_report_pattern.md`](shared/benchmark_report_pattern.md)。
 - **Artifact 可重現性 Lockfile**（v3.3.5+）— Material Passport 新增可選 `repro_lock` 子區塊。**是設定文件化，不是重播保證** — LLM 輸出不是位元可重現。詳見 [`shared/artifact_reproducibility_pattern.md`](shared/artifact_reproducibility_pattern.md)。
 - **實驗來源憑證登錄**（#260）— Material Passport 可選的 `experiment_provenance[]` 記錄研究者在**外部**跑過的實驗（ARS 從不執行實驗），論文宣稱透過 `claim_intent_manifest.planned_experiment_ids[]` 與之 join。誠信 gate（Stage 2.5/4.5）逐條比對實驗支撐型宣稱與登錄憑證 — `ALIGNED` / `OVERSTATED` / `NOT_SUPPORTED_BY_PROVENANCE` / `PROVENANCE_INSUFFICIENT` — **但不判定實驗本身是否正確**。fail-closed 的 `experiment_intake_declaration` 讓「有沒有跑實驗」成為 Stage 1 明確決定。詳見 [`shared/handoff_schemas.md`](shared/handoff_schemas.md)。
+- **蘇格拉底閱讀探針**（v3.5.1）— 由 `ARS_SOCRATIC_READING_PROBE` 環境變數控制，在 goal-oriented Socratic 會話中觸發一次性閱讀誠實檢查。詳見 [`deep-research/agents/socratic_mentor_agent.md`](deep-research/agents/socratic_mentor_agent.md)。
 
 ---
 

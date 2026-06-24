@@ -62,7 +62,7 @@ PROFILE_HEADING_FORMATS: dict[str, dict[str, dict[str, str]]] = {
     "guangxi-undergrad": {
         "Heading1": {"sz": "36", "align": "center", "before": "400", "after": "400"},
         "Heading2": {"sz": "30", "align": "left",   "before": "0",   "after": "0"},
-        "Heading3": {"sz": "28", "align": "left",   "before": "0",   "after": "0"},
+        "Heading3": {"sz": "28", "align": "left",   "before": "150",   "after": "0"},
         "Heading4": {"sz": "24", "align": "left",   "before": "0",   "after": "0"},
         "heading4_east_asia": "黑体",
     },
@@ -165,7 +165,13 @@ def _normalized_label(text: str) -> str:
 
 
 def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
-    """Fill known official cover fields without inventing missing values."""
+    """Fill known official cover fields without inventing missing values.
+
+    Applies Chinese-university thesis formatting to filled fields:
+    - Title: 黑体 一号(26pt) with underline
+    - Advisor: 宋体 四号(14pt)
+    - Other fields: inherit template formatting
+    """
     for table in cover_doc.tables:
         for row in table.rows:
             if len(row.cells) < 2:
@@ -174,6 +180,27 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
             field = COVER_LABEL_TO_FIELD.get(label)
             if field and cover_fields.get(field):
                 _set_cell_text(row.cells[1], cover_fields[field])
+                # Format title cell: 黑体 一号(26pt) + underline (Issue #83)
+                if field == "title":
+                    for para in row.cells[1].paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for run in para.runs:
+                            _set_run_font(run, east_asia="黑体", ascii="黑体",
+                                          sz="52", bold=False)
+                            # Add single underline
+                            rPr = run._element.find(qn("w:rPr"))
+                            if rPr is None:
+                                rPr = parse_xml(f'<w:rPr {nsdecls("w")}></w:rPr>')
+                                run._element.insert(0, rPr)
+                            if rPr.find(qn("w:u")) is None:
+                                rPr.append(parse_xml(
+                                    f'<w:u {nsdecls("w")} w:val="single"/>'
+                                ))
+                elif field == "advisor":
+                    for para in row.cells[1].paragraphs:
+                        for run in para.runs:
+                            _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+                                          sz="28", bold=False)
 
     date = cover_fields.get("date", "")
     if date:
@@ -181,6 +208,11 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
             text = para.text.strip()
             if not text or re.match(r"^[二〇零一二三四五六七八九十\d]{4}年", text):
                 para.text = date
+                # Format date: 宋体 四号(14pt), centered (Issue #83)
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for run in para.runs:
+                    _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
+                                  sz="28", bold=False)
                 break
 
 
@@ -609,6 +641,7 @@ def _insert_abstract_pages(doc: Document, insert_at: int, abstract_fields: dict[
             _paragraph_xml(
                 _capitalize_english_title(title_en),
                 align="center",
+                bold=True,
                 size=32,
                 east_asia_font="Times New Roman",
                 ascii_font="Times New Roman",
@@ -1167,11 +1200,13 @@ def _format_equation_numbers(doc: Document) -> None:
         omath_para.addnext(parse_xml(run_xml))
 
 
-def _add_toc(doc: Document, toc_title: str) -> None:
+def _add_toc(doc: Document, toc_title: str, insert_at: int | None = None) -> None:
     """Add a TOC field after the heading that matches the TOC title.
 
-    Inserts the TOC before the front-matter-to-body section break so that
-    the section break properly starts Chapter 1 on a new page.
+    When *insert_at* is provided, the TOC heading + field + page break are
+    inserted at that child index in the document body.  Otherwise the TOC is
+    placed before the front-matter-to-body section break (legacy path).
+
     TOC field shows only Level 1 and Level 2 (backslash o "1-2").
     """
     body_elem = doc.element.body
@@ -1185,45 +1220,18 @@ def _add_toc(doc: Document, toc_title: str) -> None:
             toc_heading = para
             break
 
-    # Find first chapter heading and the section break before it (body section break)
-    first_chap_idx = None
-    for i, elem in enumerate(children):
-        if elem.tag != qn("w:p") or _is_toc_paragraph(elem):
-            continue
-        texts = elem.findall(".//" + qn("w:t"))
-        text = "".join(t.text or "" for t in texts).strip()
-        if _is_chapter_heading(text):
-            first_chap_idx = i
-            break
-
-    # Find the section break that separates front matter from body — the one
-    # that comes right before the first chapter heading (not the cover→abstract
-    # section break).
-    sect_break_idx = None
-    if first_chap_idx is not None:
-        for i in range(first_chap_idx - 1, -1, -1):
-            elem = children[i]
-            if elem.tag != qn("w:p"):
-                continue
-            pPr = elem.find(qn("w:pPr"))
-            if pPr is not None and pPr.find(qn("w:sectPr")) is not None:
-                sect_break_idx = i
-                break
-
     if toc_heading is not None:
         # Existing heading — insert TOC field after it, ensure break after
         toc_element = toc_heading._element
         parent = toc_element.getparent()
         idx = list(parent).index(toc_element)
-    else:
-        # Insert TOC heading before the section break (or before first chapter)
-        insert_at = sect_break_idx if sect_break_idx is not None else (first_chap_idx or 0)
-
+    elif insert_at is not None:
+        # Explicit insertion point (caller guarantees correct position)
         # Blank line before
         body_elem.insert(insert_at, parse_xml(_blank_line_xml()))
         insert_at += 1
 
-        # TOC heading: 黑体 三号(32pt), centered, blank line after in spacing
+        # TOC heading: 黑体 三号(32pt), centered
         heading_xml = parse_xml(
             f'<w:p {nsdecls("w")}>'
             f'  <w:pPr>'
@@ -1241,6 +1249,53 @@ def _add_toc(doc: Document, toc_title: str) -> None:
         toc_element = heading_xml
         parent = body_elem
         idx = insert_at
+    else:
+        # Legacy path: search for section break before first chapter
+        first_chap_idx = None
+        for i, elem in enumerate(children):
+            if elem.tag != qn("w:p") or _is_toc_paragraph(elem):
+                continue
+            texts = elem.findall(".//" + qn("w:t"))
+            text = "".join(t.text or "" for t in texts).strip()
+            if _is_chapter_heading(text):
+                first_chap_idx = i
+                break
+
+        sect_break_idx = None
+        if first_chap_idx is not None:
+            for i in range(first_chap_idx - 1, -1, -1):
+                elem = children[i]
+                if elem.tag != qn("w:p"):
+                    continue
+                pPr = elem.find(qn("w:pPr"))
+                if pPr is not None and pPr.find(qn("w:sectPr")) is not None:
+                    sect_break_idx = i
+                    break
+
+        insert_at_legacy = sect_break_idx if sect_break_idx is not None else (first_chap_idx or 0)
+
+        # Blank line before
+        body_elem.insert(insert_at_legacy, parse_xml(_blank_line_xml()))
+        insert_at_legacy += 1
+
+        # TOC heading: 黑体 三号(32pt), centered
+        heading_xml = parse_xml(
+            f'<w:p {nsdecls("w")}>'
+            f'  <w:pPr>'
+            f'    <w:jc w:val="center"/>'
+            f'    <w:spacing w:before="400" w:after="400" w:line="400" w:lineRule="exact"/>'
+            f'    <w:rPr><w:rFonts w:eastAsia="黑体" w:ascii="黑体" w:hAnsi="黑体"/>'
+            f'      <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>'
+            f'  </w:pPr>'
+            f'  <w:r><w:rPr><w:rFonts w:eastAsia="黑体" w:ascii="黑体" w:hAnsi="黑体"/>'
+            f'      <w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>'
+            f'    <w:t>{toc_title}</w:t></w:r>'
+            f"</w:p>"
+        )
+        body_elem.insert(insert_at_legacy, heading_xml)
+        toc_element = heading_xml
+        parent = body_elem
+        idx = insert_at_legacy
 
     # TOC field paragraph (level 1-2 only)
     toc_xml = parse_xml(
@@ -1256,16 +1311,10 @@ def _add_toc(doc: Document, toc_title: str) -> None:
     )
     parent.insert(idx + 1, toc_xml)
 
-    # Ensure first chapter has pageBreakBefore (covers the case where TOC was
-    # inserted between the section break and the first chapter heading)
-    if first_chap_idx is not None:
-        first_chap_elem = children[first_chap_idx]
-        pPr = first_chap_elem.find(qn("w:pPr"))
-        if pPr is None:
-            pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
-            first_chap_elem.insert(0, pPr)
-        if pPr.find(qn("w:pageBreakBefore")) is None:
-            pPr.append(parse_xml(f'<w:pageBreakBefore {nsdecls("w")}/>'))
+    # Add page break after the TOC field to ensure TOC occupies its own page(s)
+    # and body text starts on a fresh page (Issue #83)
+    page_break_xml = parse_xml(_page_break_xml())
+    parent.insert(idx + 2, page_break_xml)
 
 
 def _format_toc_entries(doc: Document) -> None:
@@ -2186,6 +2235,9 @@ def postprocess(
     if abstract_fields:
         insert_at = _insert_abstract_pages(doc, insert_at, abstract_fields)
 
+    # 0c. Insert TOC after cover + abstract, before body text
+    _add_toc(doc, toc_title, insert_at=insert_at)
+
     # 0.5 Add chapter/section numbering (第一章, 1.1, 1.1.1, ...) before section breaks
     _auto_number_headings(doc)
 
@@ -2209,9 +2261,6 @@ def postprocess(
 
     # 3. Set headers and footers on each section
     _set_section_headers_footers(doc, header_text, title)
-
-    # 4. Add TOC field
-    _add_toc(doc, toc_title)
 
     # 4.5 Format TOC entries (宋体 小四, left-aligned, no indent)
     _format_toc_entries(doc)

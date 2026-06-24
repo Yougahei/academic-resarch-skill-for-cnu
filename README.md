@@ -32,6 +32,13 @@
 | `academic-paper-reviewer` | 多视角模拟评审（主编 + 3 位同行 + 反方） | 7 |
 | `academic-pipeline` | 全流程编排：研究 → 写作 → 完整性检查 → 评审 → 修改 → 终稿 | 5 |
 
+### 上游关键功能
+
+本 fork 继承上游全部特性，包括：
+
+- **Experiment Provenance Intake**（#260）— Material Passport 可选 `experiment_provenance[]` 记录外部实验凭据，fail-closed 的 `experiment_intake_declaration` 在 Stage 1 明确决定
+- **Socratic Reading Probe**（v3.5.1）— 由 `ARS_SOCRATIC_READING_PROBE` 环境变量控制，在 goal-oriented Socratic 会话中触发一次性阅读检查探针
+
 ---
 
 ## 安装
