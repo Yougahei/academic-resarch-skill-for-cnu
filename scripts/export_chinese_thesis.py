@@ -239,18 +239,43 @@ def _parse_simple_frontmatter(text: str) -> dict[str, str]:
             return {}
         return {str(key): str(value) for key, value in loaded.items() if value is not None}
     except Exception:
-        # Fallback line-by-line parser: splits on the first colon in each line.
-        # Limitations: cannot parse multi-line values, lists, nested mappings,
-        # YAML comments, or values containing colons. Suitable only for simple
-        # flat frontmatter with thesis metadata.
         fields: dict[str, str] = {}
-        for line in raw.splitlines():
+        lines = raw.splitlines()
+        i = 0
+        while i < len(lines):
+            line = lines[i]
             if ":" not in line:
+                i += 1
                 continue
             key, value = line.split(":", 1)
-            value = value.strip().strip("'\"")
+            key = key.strip()
+            value = value.strip()
+            if value in ("|", "|-", "|+", ">", ">-", ">+"):
+                block_lines: list[str] = []
+                i += 1
+                while i < len(lines) and (lines[i] == "" or lines[i].startswith(" ")):
+                    block_lines.append(lines[i].strip())
+                    i += 1
+                if value[0] == "|":
+                    block_value = "\n".join(block_lines)
+                else:
+                    folded: list[str] = []
+                    for bl in block_lines:
+                        if bl:
+                            if folded and folded[-1] != "\n":
+                                folded.append(" ")
+                            folded.append(bl)
+                        else:
+                            folded.append("\n")
+                    block_value = "".join(folded)
+                block_value = block_value.rstrip("\n")
+                if block_value:
+                    fields[key] = block_value
+                continue
+            value = value.strip("'\"")
             if value:
-                fields[key.strip()] = value
+                fields[key] = value
+            i += 1
         return fields
 
 
@@ -443,8 +468,8 @@ def prepare_markdown_for_export(input_path: Path, output_dir: Path) -> PreparedM
     inline_metadata, body_without_abstracts = extract_inline_abstract_blocks(body)
     retained_keys = set(THESIS_METADATA_KEYS) | set(COVER_FIELD_KEYS)
     metadata = {
-        **inline_metadata,
         **{key: value for key, value in frontmatter.items() if key in retained_keys},
+        **inline_metadata,
     }
     if title:
         metadata["title"] = title

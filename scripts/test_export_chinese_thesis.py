@@ -167,6 +167,45 @@ def test_prepare_markdown_extracts_inline_abstract_blocks(tmp_path: Path) -> Non
     assert "## 第1章 绪论" in normalized
 
 
+def test_prepare_markdown_block_scalar_abstracts_without_pyyaml(tmp_path: Path, monkeypatch) -> None:
+    import sys
+
+    monkeypatch.setitem(sys.modules, "yaml", None)
+    paper = tmp_path / "paper.md"
+    paper.write_text(
+        "\n".join(
+            [
+                "---",
+                "title: 块标量摘要测试",
+                "abstract-zh: |",
+                "  中文摘要第一段。",
+                "",
+                "  中文摘要第二段。",
+                "keywords-zh: 关键词一；关键词二",
+                "abstract-en: >",
+                "  English abstract first paragraph.",
+                "",
+                "  English abstract second paragraph.",
+                "keywords-en: keyword one; keyword two",
+                "---",
+                "## 第1章 绪论",
+                "正文内容",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    prepared = export.prepare_markdown_for_export(paper, tmp_path)
+
+    assert prepared.metadata["abstract-zh"] != "|"
+    assert "中文摘要第一段。" in prepared.metadata["abstract-zh"]
+    assert "中文摘要第二段。" in prepared.metadata["abstract-zh"]
+    assert "English abstract first paragraph." in prepared.metadata["abstract-en"]
+    assert "English abstract second paragraph." in prepared.metadata["abstract-en"]
+    assert prepared.metadata["keywords-zh"] == "关键词一；关键词二"
+    assert prepared.metadata["keywords-en"] == "keyword one; keyword two"
+
+
 def test_validate_abstract_metadata_requires_bilingual_abstracts() -> None:
     try:
         export.validate_abstract_metadata({"abstract-zh": "中文摘要"})
@@ -1191,3 +1230,131 @@ def test_format_equation_numbers_spacing(tmp_path: Path) -> None:
         assert spacing is not None, "spacing should be set"
         assert spacing.get(qn("w:line")) == "400", "line spacing should be 400 twips"
         assert spacing.get(qn("w:lineRule")) == "exact", "line rule should be exact"
+
+
+# ---------------------------------------------------------------------------
+# Heading outline level (#75) and Normal style line spacing (#76) tests
+# ---------------------------------------------------------------------------
+
+
+def _outline_level(elem) -> str | None:
+    pPr = elem.find(qn("w:pPr"))
+    if pPr is None:
+        return None
+    outline = pPr.find(qn("w:outlineLvl"))
+    if outline is None:
+        return None
+    return outline.get(qn("w:val"))
+
+
+def test_format_headings_sets_outline_level() -> None:
+    from scripts.postprocess_chinese_thesis_docx import _format_headings_and_body
+
+    doc = Document()
+    h1 = doc.add_paragraph("第1章 绪论")
+    _add_style_to_paragraph(h1, "Heading1")
+    h2 = doc.add_paragraph("1.1 背景介绍")
+    _add_style_to_paragraph(h2, "Heading2")
+    h3 = doc.add_paragraph("1.1.1 研究意义")
+    _add_style_to_paragraph(h3, "Heading3")
+
+    _format_headings_and_body(doc, "mainland-fallback")
+
+    assert _outline_level(h1._element) == "0"
+    assert _outline_level(h2._element) == "1"
+    assert _outline_level(h3._element) == "2"
+
+
+def test_postprocess_sets_normal_style_line_spacing(tmp_path: Path) -> None:
+    from scripts.postprocess_chinese_thesis_docx import validate_format
+
+    input_docx = tmp_path / "input.docx"
+    output_docx = tmp_path / "output.docx"
+    _write_minimal_generated_docx(input_docx)
+    profile = export.PROFILES["mainland-fallback"]
+
+    postprocess(
+        input_docx=input_docx,
+        output_docx=output_docx,
+        profile=profile.id,
+    )
+
+    doc = Document(str(output_docx))
+    normal = doc.styles["Normal"]
+    pPr = normal.element.find(qn("w:pPr"))
+    assert pPr is not None
+    spacing = pPr.find(qn("w:spacing"))
+    assert spacing is not None
+    assert spacing.get(qn("w:line")) == "400"
+    assert spacing.get(qn("w:lineRule")) == "exact"
+
+    results = validate_format(output_docx, profile.id)
+    spacing_result = next(
+        r for r in results if "Normal style" in r["check"]
+    )
+    assert spacing_result["result"] == "pass", spacing_result
+
+
+# ---------------------------------------------------------------------------
+# Cover deduplication (#73) and compaction (#74) tests
+# ---------------------------------------------------------------------------
+
+
+def test_postprocess_cover_title_not_duplicated(tmp_path: Path) -> None:
+    input_docx = tmp_path / "input.docx"
+    output_docx = tmp_path / "output.docx"
+    _write_minimal_generated_docx(input_docx)
+    profile = export.PROFILES["guangxi-undergrad"]
+    assert profile.cover_docx is not None
+
+    title = "LLM 时代企业知识基础设施研究"
+    postprocess(
+        input_docx=input_docx,
+        output_docx=output_docx,
+        profile=profile.id,
+        cover_docx=profile.cover_docx,
+        cover_fields={"title": title},
+    )
+
+    doc = Document(str(output_docx))
+    title_cell_count = 0
+    for table in doc.tables:
+        for row in table.rows:
+            if len(row.cells) >= 2 and row.cells[1].text.strip() == title:
+                title_cell_count += 1
+    assert title_cell_count == 1, f"title should appear once, got {title_cell_count}"
+
+
+def test_postprocess_cover_compact_no_extra_blank_paragraphs(tmp_path: Path) -> None:
+    input_docx = tmp_path / "input.docx"
+    output_docx = tmp_path / "output.docx"
+    _write_minimal_generated_docx(input_docx)
+    profile = export.PROFILES["guangxi-undergrad"]
+    assert profile.cover_docx is not None
+
+    postprocess(
+        input_docx=input_docx,
+        output_docx=output_docx,
+        profile=profile.id,
+        cover_docx=profile.cover_docx,
+        cover_fields={"title": "封面标题"},
+    )
+
+    doc = Document(str(output_docx))
+    title_idx = None
+    for idx, para in enumerate(doc.paragraphs):
+        if para.text.strip() == "本科毕业论文":
+            title_idx = idx
+            break
+    assert title_idx is not None, "cover title paragraph not found"
+    blanks_before = sum(
+        1 for para in doc.paragraphs[:title_idx] if not para.text.strip()
+    )
+    assert blanks_before <= 1, f"expected <=1 blank before title, got {blanks_before}"
+
+    title_table = doc.tables[0]
+    title_label_rows = sum(
+        1 for row in title_table.rows
+        if len(row.cells) >= 1 and "课题名称" in row.cells[0].text
+    )
+    assert title_label_rows == 1, f"课题名称 table should have 1 row, got {title_label_rows}"

@@ -21,7 +21,7 @@ import zipfile
 from lxml import etree
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml
 from docx.shared import Cm, Pt
@@ -172,6 +172,8 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
     - Advisor: 宋体 四号(14pt)
     - Other fields: inherit template formatting
     """
+    filled: set[str] = set()
+    rows_to_delete: list = []
     for table in cover_doc.tables:
         for row in table.rows:
             if len(row.cells) < 2:
@@ -179,6 +181,9 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
             label = _normalized_label(row.cells[0].text)
             field = COVER_LABEL_TO_FIELD.get(label)
             if field and cover_fields.get(field):
+                if field in filled:
+                    rows_to_delete.append(row._tr)
+                    continue
                 _set_cell_text(row.cells[1], cover_fields[field])
                 # Format title cell: 黑体 一号(26pt) + underline (Issue #83)
                 if field == "title":
@@ -201,6 +206,11 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
                         for run in para.runs:
                             _set_run_font(run, east_asia="宋体", ascii="Times New Roman",
                                           sz="28", bold=False)
+                filled.add(field)
+    for tr in rows_to_delete:
+        parent = tr.getparent()
+        if parent is not None:
+            parent.remove(tr)
 
     date = cover_fields.get("date", "")
     if date:
@@ -251,6 +261,27 @@ def _strip_comment_markers(element) -> None:
             gp.remove(parent)
 
 
+def _compact_cover_top(cover_doc: Document) -> None:
+    """Remove redundant leading blank paragraphs from a cover template.
+
+    Keeps at most one blank paragraph immediately before the first non-empty
+    cover paragraph (e.g. the "本科毕业论文" title) so the cover fits on one
+    page instead of spilling onto a second.
+    """
+    body = cover_doc.element.body
+    paragraphs = [c for c in body if c.tag == qn("w:p")]
+    title_idx = None
+    for idx, elem in enumerate(paragraphs):
+        if _paragraph_text(elem).strip():
+            title_idx = idx
+            break
+    if title_idx is None or title_idx <= 1:
+        return
+    blanks_before = paragraphs[:title_idx]
+    for elem in blanks_before[:-1]:
+        body.remove(elem)
+
+
 def _insert_cover(
     doc: Document,
     cover_docx: Path,
@@ -270,6 +301,7 @@ def _insert_cover(
         paper_size = {"w": 11906, "h": 16838}  # A4
     cover_doc = Document(str(cover_docx))
     _fill_cover_doc(cover_doc, cover_fields)
+    _compact_cover_top(cover_doc)
 
     body = doc.element.body
     insert_at = 0
@@ -1464,6 +1496,7 @@ def _format_headings_and_body(doc: Document, profile: str = "mainland-fallback")
     """
     heading_fmt = PROFILE_HEADING_FORMATS.get(profile, PROFILE_HEADING_FORMATS["mainland-fallback"])
     heading4_ea = heading_fmt.get("heading4_east_asia", "黑体")
+    outline_levels = {"Heading1": "0", "Heading2": "1", "Heading3": "2", "Heading4": "3"}
     BODY_STYLES = {"Normal", "BodyText", "FirstParagraph", "First Paragraph"}
     EXCLUDED_BODY = {"Bibliography", "toc 1", "toc 2", "toc 3",
                      "Compact", "TableCaption", "ImageCaption",
@@ -1483,6 +1516,7 @@ def _format_headings_and_body(doc: Document, profile: str = "mainland-fallback")
                 _set_para_spacing(pPr, before="400", after="400")
                 _set_para_alignment(pPr, "center")
                 _set_para_line_spacing_fixed_20pt(pPr)
+                _set_outline_level(pPr, "0")
                 for run in para.runs:
                     _set_run_font(run, east_asia="黑体", ascii="黑体",
                                   sz="32", bold=True)
@@ -1492,6 +1526,7 @@ def _format_headings_and_body(doc: Document, profile: str = "mainland-fallback")
             _set_para_spacing(pPr, before=fmt["before"], after=fmt["after"])
             _set_para_alignment(pPr, fmt["align"])
             _set_para_line_spacing_fixed_20pt(pPr)
+            _set_outline_level(pPr, outline_levels.get(style, "0"))
             # --- run properties (Level 4 may use 楷体 per profile spec) ---
             heading_font = heading4_ea if style == "Heading4" else "黑体"
             for run in para.runs:
@@ -1539,6 +1574,29 @@ def _set_para_line_spacing_fixed_20pt(pPr) -> None:
     else:
         spacing.set(qn("w:line"), "400")
         spacing.set(qn("w:lineRule"), "exact")
+
+
+def _set_outline_level(pPr, level: str) -> None:
+    outline = pPr.find(qn("w:outlineLvl"))
+    if outline is None:
+        outline = parse_xml(f'<w:outlineLvl {nsdecls("w")} w:val="{level}"/>')
+        pPr.append(outline)
+    else:
+        outline.set(qn("w:val"), level)
+
+
+def _set_style_line_spacing_exact(style, twips: str, rule: str = "exact") -> None:
+    element = style.element
+    pPr = element.find(qn("w:pPr"))
+    if pPr is None:
+        pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+        element.append(pPr)
+    spacing = pPr.find(qn("w:spacing"))
+    if spacing is None:
+        spacing = parse_xml(f'<w:spacing {nsdecls("w")}></w:spacing>')
+        pPr.append(spacing)
+    spacing.set(qn("w:line"), twips)
+    spacing.set(qn("w:lineRule"), rule)
 
 
 def _set_first_line_indent(pPr, chars: int = 2) -> None:
@@ -2183,17 +2241,22 @@ def _validate_style_spacing(results: list[dict], style, spec: dict) -> None:
     ls = pf.line_spacing
     lsr = pf.line_spacing_rule
     if ls is not None:
-        obs_pt = round(ls / 20, 1)  # twips → pt
-        spacing_ok = abs(obs_pt - exp_spacing) < 2.0
-        # Style-level spacing is often overridden at paragraph level by
-        # _set_para_line_spacing_fixed_20pt(); a mismatch here is a style
-        # definition quirk, not a visible defect.  Flag as warn, not fail.
-        results.append({
-            "check": "Body line spacing (Normal style)",
-            "expected": f"{exp_spacing} pt exact",
-            "observed": f"{obs_pt} pt (rule={lsr})",
-            "result": "pass" if spacing_ok else "warn",
-        })
+        if lsr in (WD_LINE_SPACING.EXACTLY, WD_LINE_SPACING.AT_LEAST):
+            obs_pt = round(int(ls) / 12700, 1)
+            spacing_ok = abs(obs_pt - exp_spacing) < 2.0
+            results.append({
+                "check": "Body line spacing (Normal style)",
+                "expected": f"{exp_spacing} pt exact",
+                "observed": f"{obs_pt} pt (rule={lsr})",
+                "result": "pass" if spacing_ok else "warn",
+            })
+        else:
+            results.append({
+                "check": "Body line spacing (Normal style)",
+                "expected": f"{exp_spacing} pt exact",
+                "observed": f"{float(ls)} lines (rule={lsr})",
+                "result": "warn",
+            })
     else:
         results.append({
             "check": "Body line spacing",
@@ -2213,6 +2276,10 @@ def postprocess(
 ) -> Path:
     """Add cover, headers, footers, TOC, section breaks, and table formatting."""
     doc = Document(str(input_docx))
+    try:
+        _set_style_line_spacing_exact(doc.styles["Normal"], "400", "exact")
+    except KeyError:
+        pass
     fields = {key: value for key, value in (cover_fields or {}).items() if value}
     explicit_title = fields.get("title", "")
     title = explicit_title or _find_title(doc)
