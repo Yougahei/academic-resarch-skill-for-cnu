@@ -671,6 +671,13 @@ def export_once(args: argparse.Namespace, output_format: str) -> Path:
                     abstract_fields=prepared.metadata,
                 )
             except Exception as exc:
+                if not args.keep_on_post_process_fail:
+                    if output_path.exists():
+                        output_path.unlink()
+                    raise RuntimeError(
+                        f"DOCX post-processing failed and output has been removed. "
+                        f"Fix the cause and re-run. Original error: {exc}"
+                    ) from exc
                 print(f"WARNING: DOCX post-processing failed: {exc}", file=sys.stderr)
                 print("The raw Pandoc DOCX was saved; you can re-run post-processing manually.", file=sys.stderr)
 
@@ -715,6 +722,11 @@ def main() -> int:
     parser.add_argument("--no-citeproc", action="store_true", help="Disable Pandoc citeproc.")
     parser.add_argument("--report", help="Report path. With --format all, use per-output reports.")
     parser.add_argument("--force", action="store_true", help="Overwrite output if it already exists.")
+    parser.add_argument(
+        "--keep-on-post-process-fail",
+        action="store_true",
+        help="Keep incomplete DOCX output even if post-processing fails.",
+    )
     args = parser.parse_args()
 
     formats = ["docx", "pdf", "latex"] if args.format == "all" else [args.format]
