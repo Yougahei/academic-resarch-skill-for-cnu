@@ -1,6 +1,6 @@
 # Academic Research Skills — 中国高校论文版
 
-[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Yougahei/acdemic-resarch-skill-for-CNU)
+[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Yougahei/acdemic-resarch-skill-for-CNU/releases/tag/v3.12.0)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](https://creativecommons.org/licenses/by-nc/4.0/)
 
 本仓库是 [Imbad0202/academic-research-skills](https://github.com/Imbad0202/academic-research-skills) 的 fork，在原版 4 个 Skill（deep-research、academic-paper、academic-paper-reviewer、academic-pipeline）基础上，增加了**中国高校论文格式导出**能力。
@@ -328,6 +328,125 @@ Issue-driven development：每个迭代从 GitHub Issue 开始，每个分支一
 6. **`export_chinese_thesis.py`** — 导出符合学校规范的 DOCX/PDF
 
 ---
+
+## 上游版本日志
+
+### v3.12.0 (2026-06-08)
+- Experiment Provenance Intake + claim→experiment alignment (#260)
+- Figure/Table Fidelity Gate (#261)
+- Cross-Paper Contradiction inventory (#262)
+- Partial-evidence decomposition (#213/#214)
+- Guidance + interpretive layer (#274/#273/#367)
+- Negative scope + release discipline
+
+### v3.11.1 (2026-06-06)
+- Bug fix: citation gate edge case when arXiv API returns 429
+
+### v3.11.0 (2026-06-04)
+- Deterministic citation verification gate (#182)
+- Four-index verification (arXiv + S2 + OpenAlex + Crossref)
+- Persistent SQLite verification cache
+- `citation_existence` terminal policy
+
+### v3.10.0 (2026-06-01)
+- Triangulation policy layer (#127)
+- `terminal_policies` opt-in (advisory/strict/strict_articles_only)
+- `venue_type` entry fields
+- Hard-block at emission boundary under strict mode
+
+### v3.9.4.2 (2026-05-19)
+- Fix: regression in mark-read script
+
+### v3.9.4.1 (2026-05-19)
+- Fix: reset-boundary edge case in long sessions
+
+### v3.9.4 (2026-05-18)
+- Cross-model audit fixes
+
+### v3.9.1 (2026-05-18)
+- Documentation and bug-fix follow-up
+
+### v3.9.0 (2026-05-17)
+- Three-index contamination triangulation (S2 + OpenAlex + Crossref)
+
+### v3.8.0 (2026-05-16)
+- Agent collaboration refinement
+
+### v3.7.0 (2026-05-05)
+- Claude Code plugin packaging
+- 10 slash commands + 3 plugin agents
+
+### v3.6.8 (2026-05-03)
+- Generator-evaluator contract gate (Schema 13.1)
+
+### v3.6.7 (2026-04-30)
+- Downstream-agent pattern protection layer
+
+### v3.6.5 (2026-04-27)
+- Material Passport `literature_corpus[]` consumer integration
+
+### v3.6.4 (2026-04-25)
+- Material Passport `literature_corpus[]` input port + adapters
+
+### v3.6.3 (2026-04-23)
+- Opt-in passport reset boundary
+
+### v3.6.2 (2026-04-23)
+- Sprint Contract hard gate for reviewers (Schema 13)
+
+### v3.5.1 (2026-04-22)
+- Opt-in Socratic reading-check probe
+
+### v3.5.0 (2026-04-21)
+- Collaboration Depth Observer
+
+### v3.4.0 (2026-04-20)
+- Compliance Agent + Schema 12 compliance report
+
+### v3.3.6 (2026-04-15)
+- DOCX contract lines moved to docs/SETUP.md
+
+### v3.3.5 (2026-04-15)
+- Documentation updates
+
+### v3.3.4 (2026-04-15)
+- Bug fixes
+
+### v3.3.3 (2026-04-15)
+- Minor improvements
+
+### v3.3.2 (2026-04-15)
+- Initial v3.3.x release
+
+#### Deep Research (7 modes)
+
+Deep Research provides 7 modes: full mode, quick mode, socratic mode, review mode, lit-review mode, fact-check mode, systematic-review mode. Full mode produces a comprehensive research report. Quick mode generates a fast research brief. Socratic mode engages the user in guided dialogue to clarify research questions. Review mode evaluates research quality. Lit-review mode produces a literature review. Fact-check mode verifies claims, data, and citations. Systematic-review mode follows PRISMA guidelines for systematic reviews and meta-analysis.
+
+#### Academic Paper (10 modes)
+
+Academic Paper provides 10 modes: full mode, plan mode, outline-only mode, revision mode, revision-coach mode, abstract-only mode, lit-review mode, format-convert mode, citation-check mode, disclosure mode. Full mode produces a complete academic paper draft. Plan mode guides the user through chapter planning via Socratic dialogue. Outline-only mode generates a structured outline. Revision mode rewrites the paper based on reviewer/advisor feedback. Revision-coach mode parses review comments and produces a revision roadmap. Abstract-only mode generates bilingual Chinese/English abstracts. Lit-review mode produces a literature review paper. Format-convert mode handles format conversion including Chinese university thesis formatting and audit. Citation-check mode verifies citation compliance. Disclosure mode generates an AI-usage disclosure statement.
+
+#### Academic Paper Reviewer (6 modes)
+
+Academic Paper Reviewer provides 6 modes: full mode, re-review mode, quick mode, methodology-focus mode, guided mode, calibration mode. Full mode simulates 5 reviewers (EIC + 3 peer + Devil's Advocate). Re-review verifies revision responses. Quick mode provides a faster assessment. Methodology-focus mode evaluates methodological rigor. Guided mode engages the author in Socratic dialogue about review issues. Calibration mode measures reviewer accuracy (FNR/FPR/balanced-accuracy).
+
+#### Academic Pipeline (Orchestrator)
+
+### Deep Research (v2.9.4)
+
+Deep Research is version 2.9.4, providing a 13-agent research team for comprehensive academic investigation.
+
+### Academic Paper (v3.2.0)
+
+Academic Paper is version 3.2.0, providing a 12-agent paper writing pipeline.
+
+### Academic Paper Reviewer (v1.10.0)
+
+Academic Paper Reviewer is version 1.10.0, providing multi-perspective review with 7 agents.
+
+### Academic Pipeline (v3.12.0)
+
+The pipeline orchestrator coordinates all four skills through a 10-stage workflow: Research → Write → Integrity Check (Stage 2.5) → Review → Revise → Re-review → Re-revise → Final Integrity (Stage 4.5) → Finalize → Process Summary. Stage 5 (Finalize) supports DOCX (via Pandoc when available), LaTeX, and PDF output, including Chinese university thesis formatting.
 
 ## 许可与引用
 

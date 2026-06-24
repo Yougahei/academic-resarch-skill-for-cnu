@@ -7,7 +7,7 @@ A suite of Claude Code skills for rigorous academic research, paper writing, pee
 | Skill | Purpose | Key Modes |
 |-------|---------|-----------|
 | `deep-research` v2.9.4 | 13-agent research team | full, quick, socratic, review, lit-review, fact-check, systematic-review |
-| `academic-paper` v3.2.0 | 12-agent paper writing | full, plan, outline-only, revision, revision-coach, abstract-only, lit-review, format-convert, citation-check, disclosure |
+| `academic-paper` v3.12.0 | 12-agent paper writing | full, plan, outline-only, revision, revision-coach, abstract-only, lit-review, format-convert, citation-check, disclosure |
 | `academic-paper-reviewer` v1.10.0 | Multi-perspective paper review (5 reviewers + optional cross-model DA critique) | full, re-review, quick, methodology-focus, guided, calibration |
 | `academic-pipeline` v3.12.0 | Full pipeline orchestrator | (coordinates all above) |
 

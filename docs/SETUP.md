@@ -63,7 +63,7 @@ Claude Code 需要在 `<install-root>/<skill-name>/SKILL.md` 这一层发现 ski
 
 ## 可选：DOCX 输出
 
-如果需要 `.docx`，安装 Pandoc：
+Direct `.docx` generation uses [Pandoc](https://pandoc.org/). If you want Pandoc-generated DOCX output, install it:
 
 ```bash
 # macOS
@@ -74,6 +74,8 @@ sudo apt-get install pandoc
 ```
 
 如果没有 Pandoc，skill 仍然可以输出 Markdown，并给出转换建议。
+
+Direct `.docx` generation requires Pandoc, and PDF generation requires `tectonic`.
 
 ## 可选：LaTeX / PDF 输出
 

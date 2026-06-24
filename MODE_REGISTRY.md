@@ -2,7 +2,9 @@
 
 本文件是四个 skills 的模式索引。内部模式名保持英文，以便继续兼容原版逻辑、测试和上游合并；说明改为中文，方便中国高校论文场景使用。
 
-## deep-research
+Last updated: v3.12.0 (2026-06-08)
+
+## deep-research (7 modes)
 
 | Mode | 用途 | 典型触发 |
 |---|---|---|
@@ -14,7 +16,7 @@
 | `socratic` | 苏格拉底式选题辅导 | 研究方向不清楚、需要引导 |
 | `systematic-review` | 系统综述 | PRISMA、系统性回顾、Meta 分析 |
 
-## academic-paper
+## academic-paper (10 modes)
 
 | Mode | 用途 | 典型触发 |
 |---|---|---|
@@ -29,7 +31,7 @@
 | `citation-check` | 引用检查 | 检查参考文献、核验引用、GB/T 7714 论文引用检查 |
 | `disclosure` | AI 使用声明 | 生成 AI 辅助写作声明 |
 
-## academic-paper-reviewer
+## academic-paper-reviewer (6 modes)
 
 | Mode | 用途 | 典型触发 |
 |---|---|---|
