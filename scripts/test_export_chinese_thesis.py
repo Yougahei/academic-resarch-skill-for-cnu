@@ -18,6 +18,7 @@ from scripts.postprocess_chinese_thesis_docx import (
     _format_table_captions_and_content,
     _is_chapter_heading,
     _is_figure_table,
+    _paragraph_has_content,
     _paragraph_text,
     postprocess,
 )
@@ -395,7 +396,12 @@ def test_postprocess_inserts_abstract_pages_between_cover_and_toc(tmp_path: Path
     assert paragraph_texts.index("摘　要") < paragraph_texts.index("ABSTRACT")
     assert paragraph_texts.index("ABSTRACT") < paragraph_texts.index("目  录")
     assert paragraph_texts.index("目  录") < paragraph_texts.index("第1章 绪论")
-    assert "封面标题" not in paragraph_texts
+    # The title now appears once as a standalone cover paragraph (Issue #79
+    # moved it out of the cover table into an independent paragraph).  It
+    # must appear exactly once and before the abstract heading.
+    title_count = paragraph_texts.count("封面标题")
+    assert title_count == 1, f"title should appear once as cover paragraph, got {title_count}"
+    assert paragraph_texts.index("封面标题") < paragraph_texts.index("摘　要")
     all_text = _all_docx_text(doc)
     assert "中文摘要内容。" in all_text
     assert "English abstract content." in all_text
@@ -470,7 +476,9 @@ def test_postprocess_keeps_missing_cover_fields_blank(tmp_path: Path) -> None:
     )
 
     doc = Document(str(output_docx))
-    cover_info = doc.tables[1]
+    # Issue #79 removed the 课题名称 table, so the field table (学院/专业/...)
+    # is now the first table in the document.
+    cover_info = doc.tables[0]
     values_by_label = {row.cells[0].text.strip(): row.cells[1].text for row in cover_info.rows}
     assert values_by_label["专业："] == ""
     assert values_by_label["班级："] == ""
@@ -1365,12 +1373,24 @@ def test_postprocess_cover_title_not_duplicated(tmp_path: Path) -> None:
     )
 
     doc = Document(str(output_docx))
-    title_cell_count = 0
+    # Issue #79 moved the title out of the cover table into a standalone
+    # paragraph.  The title must appear exactly once across all paragraphs
+    # and must NOT appear inside any table cell (the 课题名称 table is gone).
+    title_paragraph_count = sum(
+        1 for para in doc.paragraphs if para.text.strip() == title
+    )
+    assert title_paragraph_count == 1, (
+        f"title should appear once as a standalone paragraph, got {title_paragraph_count}"
+    )
+
+    title_in_tables = 0
     for table in doc.tables:
         for row in table.rows:
             if len(row.cells) >= 2 and row.cells[1].text.strip() == title:
-                title_cell_count += 1
-    assert title_cell_count == 1, f"title should appear once, got {title_cell_count}"
+                title_in_tables += 1
+    assert title_in_tables == 0, (
+        f"title should not appear in any table cell, got {title_in_tables}"
+    )
 
 
 def test_postprocess_cover_compact_no_extra_blank_paragraphs(tmp_path: Path) -> None:
@@ -1395,17 +1415,30 @@ def test_postprocess_cover_compact_no_extra_blank_paragraphs(tmp_path: Path) -> 
             title_idx = idx
             break
     assert title_idx is not None, "cover title paragraph not found"
+
+    # The cover template starts with a logo paragraph (which has a drawing
+    # but no text, so para.text is "").  _compact_cover_top now treats
+    # paragraphs with drawings as content, so blanks are collapsed between
+    # the logo and the "本科毕业论文" title.  At most one blank should
+    # appear between any two content paragraphs before the first table.
+    # We use _paragraph_has_content() to correctly identify the logo
+    # paragraph (which has a drawing) as non-blank.
     blanks_before = sum(
-        1 for para in doc.paragraphs[:title_idx] if not para.text.strip()
+        1 for para in doc.paragraphs[:title_idx]
+        if not para.text.strip() and not _paragraph_has_content(para._element)
     )
     assert blanks_before <= 1, f"expected <=1 blank before title, got {blanks_before}"
 
-    title_table = doc.tables[0]
-    title_label_rows = sum(
-        1 for row in title_table.rows
-        if len(row.cells) >= 1 and "课题名称" in row.cells[0].text
+    # Issue #79 removed the 课题名称 table and replaced it with a standalone
+    # title paragraph.  Verify no table contains a 课题名称 label row.
+    title_label_rows = 0
+    for table in doc.tables:
+        for row in table.rows:
+            if len(row.cells) >= 1 and "课题名称" in row.cells[0].text:
+                title_label_rows += 1
+    assert title_label_rows == 0, (
+        f"课题名称 table should have been removed, found {title_label_rows} label rows"
     )
-    assert title_label_rows == 1, f"课题名称 table should have 1 row, got {title_label_rows}"
 
 
 def test_postprocess_writes_platform_fonts(tmp_path: Path) -> None:

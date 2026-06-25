@@ -124,7 +124,6 @@ def _profile_toc_title(profile_id: str) -> str:
     return PROFILE_TOC_TITLE.get(profile_id, "目  录")
 
 COVER_LABEL_TO_FIELD: dict[str, str] = {
-    "课题名称": "title",
     "学院": "college",
     "专业": "major",
     "班级": "class-name",
@@ -132,6 +131,7 @@ COVER_LABEL_TO_FIELD: dict[str, str] = {
     "姓名": "author",
     "指导老师": "advisor",
     "指导教师": "advisor",
+    "日期": "date",
 }
 
 
@@ -171,16 +171,122 @@ def _normalized_label(text: str) -> str:
     return re.sub(r"[\s:：]+", "", text)
 
 
+_CHINESE_DIGITS = "〇一二三四五六七八九"
+
+
+def _normalize_date_to_chinese(date: str) -> str:
+    """Normalize a date string to the Chinese-numeral format used on thesis covers.
+
+    Accepts both Chinese (``二〇二六年六月``) and Arabic (``2026年6月`` /
+    ``2026-06`` / ``2026/6``) inputs and returns the Chinese form, e.g.
+    ``二〇二六年六月``.  Strings that are already in Chinese form or that
+    do not match a recognizable date pattern are returned unchanged.
+
+    .. note::
+       Only the year and month are preserved.  A trailing day component
+       (e.g. ``2026年6月15日``) is intentionally dropped because Chinese
+       thesis covers conventionally display only year + month.
+    """
+    if not date:
+        return date
+
+    text = date.strip()
+    # Already Chinese-numeral form — return as-is.
+    if re.match(r"^[二〇零一二三四五六七八九十]{4}年", text):
+        return text
+
+    # Arabic year + month: "2026年6月", "2026年06月", "2026-06", "2026/6"
+    m = re.match(r"^(\d{4})\s*[年\-/年.]\s*(\d{1,2})\s*月?", text)
+    if m:
+        year = m.group(1)
+        month = int(m.group(2))
+        cn_year = "".join(_CHINESE_DIGITS[int(ch)] for ch in year)
+        cn_month = _chinese_month(month)
+        return f"{cn_year}年{cn_month}"
+
+    # Year only: "2026年"
+    m = re.match(r"^(\d{4})\s*年\s*$", text)
+    if m:
+        year = m.group(1)
+        cn_year = "".join(_CHINESE_DIGITS[int(ch)] for ch in year)
+        return f"{cn_year}年"
+
+    return text
+
+
+def _chinese_month(month: int) -> str:
+    """Convert an Arabic month number to the Chinese month expression."""
+    month_names = {
+        1: "一月", 2: "二月", 3: "三月", 4: "四月", 5: "五月", 6: "六月",
+        7: "七月", 8: "八月", 9: "九月", 10: "十月", 11: "十一月", 12: "十二月",
+    }
+    return month_names.get(month, f"{month}月")
+
+
+def _make_title_paragraph_xml(title: str) -> str:
+    """Build a standalone title paragraph: 黑体 一号(26pt), centered, underlined."""
+    return (
+        f'<w:p {nsdecls("w")}>'
+        f'  <w:pPr>'
+        f'    <w:jc w:val="center"/>'
+        f'    <w:spacing w:line="480" w:lineRule="auto"/>'
+        f'    <w:rPr>'
+        f'      <w:rFonts w:eastAsia="{_HEI}" w:ascii="{_HEI}" w:hAnsi="{_HEI}"/>'
+        f'      <w:b/><w:sz w:val="52"/><w:szCs w:val="52"/>'
+        f'      <w:u w:val="single"/>'
+        f'    </w:rPr>'
+        f'  </w:pPr>'
+        f'  <w:r>'
+        f'    <w:rPr>'
+        f'      <w:rFonts w:eastAsia="{_HEI}" w:ascii="{_HEI}" w:hAnsi="{_HEI}"/>'
+        f'      <w:b/><w:sz w:val="52"/><w:szCs w:val="52"/>'
+        f'      <w:u w:val="single"/>'
+        f'    </w:rPr>'
+        f'    <w:t xml:space="preserve">{escape(title)}</w:t>'
+        f'  </w:r>'
+        f"</w:p>"
+    )
+
+
+def _extract_title_from_cover_table(cover_doc: Document, title: str) -> bool:
+    """Remove the 课题名称 table and insert a standalone title paragraph.
+
+    The cover template places 课题名称 inside a 2-row table with merged cells.
+    Per university formatting norms, the title should appear as an independent
+    paragraph *before* the field table (学院/专业/班级/...).
+
+    Returns True if a title table was found and replaced.
+    """
+    if not title:
+        return False
+    body = cover_doc.element.body
+    for table in list(cover_doc.tables):
+        labels = {_normalized_label(cell.text) for row in table.rows for cell in row.cells}
+        if "课题名称" not in labels:
+            continue
+        tbl_elem = table._tbl
+        insert_idx = list(body).index(tbl_elem)
+        body.remove(tbl_elem)
+        body.insert(insert_idx, parse_xml(_make_title_paragraph_xml(title)))
+        return True
+    return False
+
+
 def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
     """Fill known official cover fields without inventing missing values.
 
     Applies Chinese-university thesis formatting to filled fields:
-    - Title: 黑体 一号(26pt) with underline
+    - Title: extracted from 课题名称 table → 黑体 一号(26pt) paragraph before field table
     - Advisor: 宋体 四号(14pt)
     - Other fields: inherit template formatting
+    - Date: 宋体 四号(14pt), centered
     """
+    title = cover_fields.get("title", "")
+    _extract_title_from_cover_table(cover_doc, title)
+
     filled: set[str] = set()
     rows_to_delete: list = []
+    normalized_date = _normalize_date_to_chinese(cover_fields.get("date", ""))
     for table in cover_doc.tables:
         for row in table.rows:
             if len(row.cells) < 2:
@@ -191,25 +297,16 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
                 if field in filled:
                     rows_to_delete.append(row._tr)
                     continue
-                _set_cell_text(row.cells[1], cover_fields[field])
-                # Format title cell: 黑体 一号(26pt) + underline (Issue #83)
-                if field == "title":
+                value = normalized_date if field == "date" else cover_fields[field]
+                _set_cell_text(row.cells[1], value)
+                if field == "advisor":
+                    for para in row.cells[1].paragraphs:
+                        for run in para.runs:
+                            _set_run_font(run, east_asia=_SONG, ascii="Times New Roman",
+                                          sz="28", bold=False)
+                elif field == "date":
                     for para in row.cells[1].paragraphs:
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for run in para.runs:
-                            _set_run_font(run, east_asia=_HEI, ascii=_HEI,
-                                          sz="52", bold=False)
-                            # Add single underline
-                            rPr = run._element.find(qn("w:rPr"))
-                            if rPr is None:
-                                rPr = parse_xml(f'<w:rPr {nsdecls("w")}></w:rPr>')
-                                run._element.insert(0, rPr)
-                            if rPr.find(qn("w:u")) is None:
-                                rPr.append(parse_xml(
-                                    f'<w:u {nsdecls("w")} w:val="single"/>'
-                                ))
-                elif field == "advisor":
-                    for para in row.cells[1].paragraphs:
                         for run in para.runs:
                             _set_run_font(run, east_asia=_SONG, ascii="Times New Roman",
                                           sz="28", bold=False)
@@ -219,18 +316,123 @@ def _fill_cover_doc(cover_doc: Document, cover_fields: dict[str, str]) -> None:
         if parent is not None:
             parent.remove(tr)
 
-    date = cover_fields.get("date", "")
-    if date:
-        for para in reversed(cover_doc.paragraphs):
-            text = para.text.strip()
-            if not text or re.match(r"^[二〇零一二三四五六七八九十\d]{4}年", text):
-                para.text = date
-                # Format date: 宋体 四号(14pt), centered (Issue #83)
-                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                for run in para.runs:
-                    _set_run_font(run, east_asia=_SONG, ascii="Times New Roman",
-                                  sz="28", bold=False)
-                break
+    # Date fallback: if date was not filled via a table row, place it as a
+    # standalone paragraph near the bottom of the cover (after the last
+    # field table).  The date is normalized to Chinese numerals.
+    date = normalized_date
+    if date and "date" not in filled:
+        _insert_date_paragraph(cover_doc, date)
+
+
+def _insert_date_paragraph(cover_doc: Document, date: str) -> None:
+    """Insert or replace the date paragraph at the bottom of the cover.
+
+    The date should appear *after* the last field table (学院/专业/...),
+    not in an arbitrary empty paragraph elsewhere on the cover.  We first
+    try to find an existing date-matching or empty paragraph that sits
+    after the last table; if none is found we insert a new centered date
+    paragraph there.
+    """
+    date_pattern = re.compile(
+        r"^[二〇零一二三四五六七八九十\d]{4}年"
+        r"|^[\dX×]{4}\s*年"
+        r"|^XXXX\s*年"
+        r"|^\d{4}\s*年"
+    )
+    body = cover_doc.element.body
+    children = list(body)
+
+    # Find the index of the last w:tbl element in the body.
+    last_tbl_idx = None
+    for i, child in enumerate(children):
+        if child.tag == qn("w:tbl"):
+            last_tbl_idx = i
+
+    if last_tbl_idx is None:
+        # No table at all — fall back to searching all paragraphs in reverse.
+        search_start = len(children)
+    else:
+        search_start = last_tbl_idx + 1
+
+    # Collect paragraphs after the last table (or all if no table).
+    trailing_paras = [
+        (i, child)
+        for i, child in enumerate(children)
+        if child.tag == qn("w:p") and i >= search_start
+    ]
+
+    # Try to find an existing date or empty paragraph after the last table.
+    for idx, elem in reversed(trailing_paras):
+        # Skip the very last paragraph if it holds the sectPr.
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is not None and pPr.find(qn("w:sectPr")) is not None:
+            continue
+        text = _paragraph_text(elem)
+        if not text or date_pattern.match(text):
+            _set_paragraph_date_text(elem, date)
+            return
+
+    # No suitable paragraph found — insert a new one right after the last
+    # table (or before the last paragraph if there is no table).
+    date_xml = _date_paragraph_xml(date)
+    if last_tbl_idx is not None:
+        children[last_tbl_idx].addnext(parse_xml(date_xml))
+    elif children:
+        # Insert before the last paragraph (usually the sectPr carrier).
+        last_para = children[-1]
+        if last_para.tag == qn("w:p"):
+            last_para.addprevious(parse_xml(date_xml))
+        else:
+            body.append(parse_xml(date_xml))
+    else:
+        body.append(parse_xml(date_xml))
+
+
+def _date_paragraph_xml(date: str) -> str:
+    return (
+        f'<w:p {nsdecls("w")}>'
+        f'  <w:pPr>'
+        f'    <w:jc w:val="center"/>'
+        f'    <w:spacing w:line="360" w:lineRule="auto"/>'
+        f'  </w:pPr>'
+        f'  <w:r>'
+        f'    <w:rPr>'
+        f'      <w:rFonts w:eastAsia="{_SONG}" w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>'
+        f'      <w:sz w:val="28"/><w:szCs w:val="28"/>'
+        f'    </w:rPr>'
+        f'    <w:t xml:space="preserve">{escape(date)}</w:t>'
+        f'  </w:r>'
+        f"</w:p>"
+    )
+
+
+def _set_paragraph_date_text(elem, date: str) -> None:
+    """Replace the text of an existing paragraph with *date*, centered."""
+    for t_elem in elem.findall(".//" + qn("w:t")):
+        t_elem.text = ""
+    t_list = elem.findall(".//" + qn("w:t"))
+    if t_list:
+        t_list[0].text = date
+    else:
+        run_xml = (
+            f'<w:r {nsdecls("w")}>'
+            f'  <w:rPr>'
+            f'    <w:rFonts w:eastAsia="{_SONG}" w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>'
+            f'    <w:sz w:val="28"/><w:szCs w:val="28"/>'
+            f'  </w:rPr>'
+            f'  <w:t xml:space="preserve">{escape(date)}</w:t>'
+            f"</w:r>"
+        )
+        elem.append(parse_xml(run_xml))
+    pPr = elem.find(qn("w:pPr"))
+    if pPr is None:
+        pPr = parse_xml(f'<w:pPr {nsdecls("w")}></w:pPr>')
+        elem.insert(0, pPr)
+    jc = pPr.find(qn("w:jc"))
+    if jc is None:
+        pPr.append(parse_xml(f'<w:jc {nsdecls("w")} w:val="center"/>'))
+    else:
+        jc.set(qn("w:val"), "center")
 
 
 def _body_children_without_section(doc: Document) -> list:
@@ -268,24 +470,72 @@ def _strip_comment_markers(element) -> None:
             gp.remove(parent)
 
 
+def _paragraph_has_content(elem) -> bool:
+    """Check if a paragraph element contains any visible content.
+
+    Returns True if the paragraph has text (w:t), a drawing (w:drawing),
+    a picture (w:pict), an OLE object (w:object), or a math element (m:oMath).
+    """
+    if _paragraph_text(elem).strip():
+        return True
+    for tag in ("w:drawing", "w:pict", "w:object"):
+        if elem.find(".//" + qn(tag)) is not None:
+            return True
+    if elem.find(".//" + qn("m:oMath")) is not None:
+        return True
+    return False
+
+
 def _compact_cover_top(cover_doc: Document) -> None:
     """Remove redundant leading blank paragraphs from a cover template.
 
-    Keeps at most one blank paragraph immediately before the first non-empty
-    cover paragraph (e.g. the "本科毕业论文" title) so the cover fits on one
-    page instead of spilling onto a second.
+    Keeps at most one blank paragraph between any two consecutive *content*
+    paragraphs so the cover fits on one page instead of spilling onto a
+    second.  Content paragraphs are those with text or embedded drawings
+    (e.g. the school logo) — see ``_paragraph_has_content``.
+
+    The compaction runs across the whole cover body (up to the first table),
+    collapsing runs of two or more blank paragraphs down to a single blank.
+    Paragraphs that contain drawings (e.g. the school logo) are never
+    removed (Issue #78).
     """
     body = cover_doc.element.body
     paragraphs = [c for c in body if c.tag == qn("w:p")]
-    title_idx = None
-    for idx, elem in enumerate(paragraphs):
-        if _paragraph_text(elem).strip():
-            title_idx = idx
+
+    # Only compact paragraphs that appear before the first table; content
+    # after tables (field values, date, section break) is left untouched.
+    first_table_idx = None
+    for i, child in enumerate(body):
+        if child.tag == qn("w:tbl"):
+            first_table_idx = i
             break
-    if title_idx is None or title_idx <= 1:
+    if first_table_idx is not None:
+        leading_paras = [p for p in paragraphs if body.index(p) < first_table_idx]
+    else:
+        leading_paras = paragraphs
+
+    if len(leading_paras) <= 1:
         return
-    blanks_before = paragraphs[:title_idx]
-    for elem in blanks_before[:-1]:
+
+    # Walk through the leading paragraphs and collapse consecutive blanks.
+    # Keep at most one blank between two content paragraphs.
+    blanks_in_run: list = []
+    to_remove: list = []
+    for elem in leading_paras:
+        if _paragraph_has_content(elem):
+            # End of a blank run — collapse to at most one blank.
+            if len(blanks_in_run) > 1:
+                to_remove.extend(blanks_in_run[1:])
+            blanks_in_run = []
+        else:
+            blanks_in_run.append(elem)
+
+    # Trailing blanks at the very end of the leading region (just before the
+    # first table) are also collapsed to one.
+    if len(blanks_in_run) > 1:
+        to_remove.extend(blanks_in_run[1:])
+
+    for elem in to_remove:
         body.remove(elem)
 
 
@@ -349,31 +599,17 @@ def _merge_cover_package_resources(output_docx: Path, cover_docx: Path) -> None:
     # 1. Read cover package resources.
     with zipfile.ZipFile(cover_docx, "r") as cz:
         cover_rels_raw = cz.read("word/_rels/document.xml.rels")
-        cover_ct_raw = cz.read("[Content_Types].xml")
         cover_media = {name: cz.read(name) for name in cz.namelist() if name.startswith("word/media/")}
-        # Pre-read any comment parts so they are available after the with block closes.
-        cover_comment_parts: dict[str, bytes] = {}
-        for name in cz.namelist():
-            if name.startswith("word/comment"):
-                cover_comment_parts[name] = cz.read(name)
 
-    # 2. Parse cover relationships to find image/comment rels.
+    # 2. Parse cover relationships to find image rels.
     NS_REL = "http://schemas.openxmlformats.org/package/2006/relationships"
     cover_rels = etree.fromstring(cover_rels_raw)
     cover_image_rels: list[tuple[str, str]] = []
     IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
-    COMMENT_REL_TYPES = {
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments",
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentsExtended",
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentsIds",
-    }
     for child in cover_rels:
         rel_type = child.get("Type", "")
         target = child.get("Target", "")
         if rel_type == IMAGE_REL_TYPE:
-            cover_image_rels.append((child.get("Id", ""), target))
-        elif rel_type in COMMENT_REL_TYPES:
-            # Track the comment relationship for rId remapping.
             cover_image_rels.append((child.get("Id", ""), target))
 
     if not cover_image_rels:
@@ -455,16 +691,6 @@ def _merge_cover_package_resources(output_docx: Path, cover_docx: Path) -> None:
         "wmf": "image/x-wmf",
         "emf": "image/x-emf",
     }
-    # Copy content-type entries for comment parts directly from the cover's
-    # [Content_Types].xml — the cover document already has the correct MIME types.
-    cover_ct = etree.fromstring(cover_ct_raw)
-    for child in cover_ct:
-        if child.tag == f"{{{CT_NS}}}Override":
-            part = child.get("PartName", "")
-            if any(part.endswith(p) for p in ("comments.xml", "commentsExtended.xml", "commentsIds.xml")):
-                if part not in known_parts:
-                    output_ct.append(deepcopy(child))
-                    known_parts.add(part)
     for name in sorted(cover_media):
         part_name = f"/{name}"
         if part_name in known_parts:
@@ -492,7 +718,6 @@ def _merge_cover_package_resources(output_docx: Path, cover_docx: Path) -> None:
             "word/_rels/document.xml.rels": output_rels_bytes,
             "[Content_Types].xml": output_ct_bytes,
             **cover_media,
-            **cover_comment_parts,
         },
     )
 
@@ -1237,6 +1462,51 @@ def _format_equation_numbers(doc: Document) -> None:
             f'</w:r>'
         )
         omath_para.addnext(parse_xml(run_xml))
+
+
+def _is_toc_field_paragraph(elem) -> bool:
+    """Check if a paragraph element contains a TOC field (fldChar + TOC instr)."""
+    for instr in elem.findall(".//" + qn("w:instrText")):
+        if instr.text and "TOC" in instr.text:
+            return True
+    return False
+
+
+def _remove_existing_toc_entries(doc: Document) -> None:
+    """Remove static/hand-written TOC entries and old TOC fields from the body.
+
+    Pandoc or a reference template may pre-generate static TOC paragraphs
+    (styled as 'toc 1', 'toc 2', 'toc 3', or 'TOCHeading') or even a stale
+    TOC field.  These coexist badly with the auto TOC field inserted by
+    ``_add_toc``, producing duplicate or non-updating entries.
+
+    This function scans the document body and removes:
+    - Paragraphs whose style is ``toc 1``, ``toc 2``, ``toc 3`` or
+      ``TOCHeading``.
+    - Paragraphs that contain a TOC field (``fldChar`` + ``instrText`` with
+      ``TOC``).
+
+    It does **not** remove the ``目  录`` heading itself — ``_add_toc``
+    reuses or creates that heading.  The ``Compact`` style (a Pandoc
+    body-text variant) is intentionally *not* removed because it may be
+    used for legitimate non-TOC content.
+    """
+    body = doc.element.body
+    TOC_ENTRY_STYLES = {"toc 1", "toc 2", "toc 3", "TOCHeading"}
+    to_remove: list = []
+    for elem in body:
+        if elem.tag != qn("w:p"):
+            continue
+        pPr = elem.find(qn("w:pPr"))
+        if pPr is not None:
+            pStyle = pPr.find(qn("w:pStyle"))
+            if pStyle is not None and pStyle.get(qn("w:val")) in TOC_ENTRY_STYLES:
+                to_remove.append(elem)
+                continue
+        if _is_toc_field_paragraph(elem):
+            to_remove.append(elem)
+    for elem in to_remove:
+        body.remove(elem)
 
 
 def _add_toc(doc: Document, toc_title: str, insert_at: int | None = None) -> None:
@@ -2324,7 +2594,9 @@ def postprocess(
     if abstract_fields:
         insert_at = _insert_abstract_pages(doc, insert_at, abstract_fields)
 
-    # 0c. Insert TOC after cover + abstract, before body text
+    # 0c. Remove any static/hand-written TOC entries left by Pandoc, then
+    #     insert the auto TOC field after cover + abstract, before body text.
+    _remove_existing_toc_entries(doc)
     _add_toc(doc, toc_title, insert_at=insert_at)
 
     # 0.5 Add chapter/section numbering (第一章, 1.1, 1.1.1, ...) before section breaks
