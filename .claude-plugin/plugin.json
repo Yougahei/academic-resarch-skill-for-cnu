@@ -1,13 +1,13 @@
 {
-  "name": "acdemic-resarch-skill-for-CNU",
+  "name": "academic-research-skill-for-cnu",
   "version": "3.12.0",
   "description": "面向中国高校论文服务的 Academic Research Skills 二开版：选题、文献综述、论文写作、评审修改、格式与引用检查。保留原版 4 skills、流程门禁和核心源码结构。",
   "author": {
     "name": "Yougahei",
     "url": "https://github.com/Yougahei"
   },
-  "homepage": "https://github.com/Yougahei/acdemic-resarch-skill-for-CNU",
-  "repository": "https://github.com/Yougahei/acdemic-resarch-skill-for-CNU",
+  "homepage": "https://github.com/Yougahei/academic-research-skill-for-cnu",
+  "repository": "https://github.com/Yougahei/academic-research-skill-for-cnu",
   "license": "CC-BY-NC-4.0",
   "keywords": [
     "academic",

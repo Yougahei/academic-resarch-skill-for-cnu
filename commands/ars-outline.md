@@ -1,5 +1,5 @@
 ---
-description: ARS academic-paper `outline-only` mode — detailed outline + evidence map
+description: 生成详细论文大纲及证据映射（不写正文）
 model: sonnet
 ---
 

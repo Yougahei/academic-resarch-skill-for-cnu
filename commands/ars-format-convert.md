@@ -1,5 +1,5 @@
 ---
-description: ARS academic-paper `format-convert` mode — convert to LaTeX / DOCX / PDF / Markdown or audit Chinese thesis formatting
+description: 论文格式转换（LaTeX/DOCX/PDF/Markdown）或审计中文论文格式
 model: sonnet
 ---
 

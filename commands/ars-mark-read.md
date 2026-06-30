@@ -1,5 +1,5 @@
 ---
-description: ARS /ars-mark-read — record human-read signal for one or more citation keys
+description: 标记引文已由人工核实（提升引用可信度）
 model: sonnet
 ---
 

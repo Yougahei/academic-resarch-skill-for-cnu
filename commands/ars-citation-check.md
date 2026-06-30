@@ -1,5 +1,5 @@
 ---
-description: ARS academic-paper `citation-check` mode — citation error report
+description: 检查论文引用格式并生成错误报告（含 GB/T 7714 中文论文专项检查）
 model: sonnet
 ---
 

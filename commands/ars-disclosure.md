@@ -1,5 +1,5 @@
 ---
-description: ARS academic-paper `disclosure` mode — venue-specific AI-usage statement
+description: 按投稿期刊/会议要求生成 AI 使用声明
 model: sonnet
 ---
 

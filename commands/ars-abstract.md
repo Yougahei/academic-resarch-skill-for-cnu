@@ -1,5 +1,5 @@
 ---
-description: ARS academic-paper `abstract-only` mode — bilingual abstract + keywords
+description: 生成中英双语摘要及关键词
 model: sonnet
 ---
 

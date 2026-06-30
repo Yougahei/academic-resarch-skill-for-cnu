@@ -1,6 +1,6 @@
 # Academic Research Skills — 中国高校论文版
 
-[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Yougahei/acdemic-resarch-skill-for-CNU/releases/tag/v3.12.0)
+[![Version](https://img.shields.io/badge/version-v3.12.0-blue)](https://github.com/Yougahei/academic-research-skill-for-cnu/releases/tag/v3.12.0)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](https://creativecommons.org/licenses/by-nc/4.0/)
 
 本仓库是 [Imbad0202/academic-research-skills](https://github.com/Imbad0202/academic-research-skills) 的 fork，在原版 4 个 Skill（deep-research、academic-paper、academic-paper-reviewer、academic-pipeline）基础上，增加了**中国高校论文格式导出**能力。
@@ -95,20 +95,20 @@
 ### Claude Code 插件安装
 
 ```text
-/plugin marketplace add Yougahei/acdemic-resarch-skill-for-CNU
-/plugin install acdemic-resarch-skill-for-CNU
+/plugin marketplace add Yougahei/academic-research-skill-for-cnu
+/plugin install academic-research-skill-for-cnu
 ```
 
 ### 手动克隆（macOS / Linux）
 
 ```bash
-git clone https://github.com/Yougahei/acdemic-resarch-skill-for-CNU.git
+git clone https://github.com/Yougahei/academic-research-skill-for-cnu.git
 
 mkdir -p ~/.claude/skills
-ln -s $(pwd)/acdemic-resarch-skill-for-CNU/deep-research ~/.claude/skills/deep-research
-ln -s $(pwd)/acdemic-resarch-skill-for-CNU/academic-paper ~/.claude/skills/academic-paper
-ln -s $(pwd)/acdemic-resarch-skill-for-CNU/academic-paper-reviewer ~/.claude/skills/academic-paper-reviewer
-ln -s $(pwd)/acdemic-resarch-skill-for-CNU/academic-pipeline ~/.claude/skills/academic-pipeline
+ln -s $(pwd)/academic-research-skill-for-cnu/deep-research ~/.claude/skills/deep-research
+ln -s $(pwd)/academic-research-skill-for-cnu/academic-paper ~/.claude/skills/academic-paper
+ln -s $(pwd)/academic-research-skill-for-cnu/academic-paper-reviewer ~/.claude/skills/academic-paper-reviewer
+ln -s $(pwd)/academic-research-skill-for-cnu/academic-pipeline ~/.claude/skills/academic-pipeline
 ```
 
 > 如果之前安装过原版 `Imbad0202/academic-research-skills`，两个插件的 skill 名称相同会导致覆盖。建议先卸载原版再安装本 fork。
@@ -320,7 +320,7 @@ python3 scripts/export_chinese_thesis.py \
 ### 运行测试
 
 ```bash
-cd acdemic-resarch-skill-for-CNU
+cd academic-research-skill-for-cnu
 python3 -m pip install -r requirements-dev.txt
 PYTHONPATH=. pytest scripts/test_export_chinese_thesis.py -v
 ```
@@ -330,7 +330,7 @@ PYTHONPATH=. pytest scripts/test_export_chinese_thesis.py -v
 ### 代码结构
 
 ```
-acdemic-resarch-skill-for-CNU/
+academic-research-skill-for-cnu/
 ├── scripts/
 │   ├── export_chinese_thesis.py        # 主导出脚本（CLI + 管线入口）
 │   ├── postprocess_chinese_thesis_docx.py  # DOCX 后处理（~1500 行）
